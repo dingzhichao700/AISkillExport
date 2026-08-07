@@ -1,0 +1,4 @@
+interface:
+  display_name: "Game Framework 模板工具链"
+  short_description: "独立生成、验证并标准化 Unity Game Framework 样例工程"
+  default_prompt: "Use $game-framework-toolchain to generate and validate a Unity sample project from the self-contained template."

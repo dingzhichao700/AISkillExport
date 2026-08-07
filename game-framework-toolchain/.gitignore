@@ -1,0 +1,16 @@
+# Stale Git metadata (left when Cursor locks index.bin)
+_git_stale/
+.git_stale/
+
+# OS / IDE
+Thumbs.db
+Desktop.ini
+.DS_Store
+.vs/
+.idea/
+
+# Accidental Unity local caches if someone opens Templates in Editor
+**/Library/
+**/Temp/
+**/Logs/
+**/UserSettings/
