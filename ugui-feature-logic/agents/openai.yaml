@@ -1,0 +1,7 @@
+interface:
+  display_name: "uGUI Feature Logic"
+  short_description: "Unity uGUI feature-window gameplay logic"
+  default_prompt: "Use $ugui-feature-logic to implement or adjust Unity uGUI gameplay logic, input handling, and runtime behavior for an approved window."
+
+policy:
+  allow_implicit_invocation: true
