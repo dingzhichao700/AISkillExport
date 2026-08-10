@@ -16,7 +16,13 @@ Each skill folder contains:
 Recommended usage:
 
 1. Clone this repo on the target device.
-2. Sync the skill folders into that device's actual Codex skill scan directory.
-3. Ensure the folder name matches the `name` field in `SKILL.md`.
+2. Ask ChatGPT/Codex to inspect this repository and install its skills by reference.
+3. On Windows, run `Tools\Install-Skills.ps1`. It creates directory junctions in the
+   active Codex skill scan directory; it does not copy the skill contents.
+4. Restart Codex so `$` suggestions are refreshed.
 
-See `SKILL_SHARE_GUIDE.md` for the shortest cross-device checklist.
+The repository must remain at the same path after installation. Editing a skill in this
+checkout updates the installed skill immediately because the scan-directory entry is only
+a link to the checkout.
+
+See `SKILL_SHARE_GUIDE.md` for installation, verification, conflicts, and other platforms.
