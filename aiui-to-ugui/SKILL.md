@@ -140,6 +140,10 @@ validation result.
 - Defer custom Unity component mappings until the Unity export stage. Never
   guess their types or serialized fields.
 - Inspect the target Unity project's governing instructions before writing.
+- For iterative Unity review, use the Stage 6 preview mode and the project's
+  persistent `Library/AIUI` request queue when available. Do not use a temporary
+  Editor C# generator, pack atlases, register Addressables, or build Player
+  Content until the corresponding finalize or release checkpoint.
 - Reuse the target project's existing code-binding and member-export mechanism.
   Do not introduce a new binding framework implicitly.
 - In the combined binding stage, create the same-named class, attach `UIBinder`,

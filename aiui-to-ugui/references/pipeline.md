@@ -138,6 +138,41 @@ Verify the generated assets and Prefab in proportion to the available tooling:
 
 Report all deviations that remain.
 
+### Stage 6 execution modes
+
+Use the lightest mode that satisfies the current checkpoint:
+
+1. **Preview** — synchronize changed raster assets and generate the visual
+   Prefab from independent Sprites. Do not create or modify view C# files,
+   initialize UIBinder, pack an atlas, register Addressables, or build Player
+   Content.
+2. **Finalize** — after visual approval, pack the module atlas, replace preview
+   Sprite references, and continue into Stage 7 when binding is requested.
+   Create or regenerate C# only when the view class or selected member schema
+   actually changes.
+3. **Release** — register final assets and build Addressables Player Content.
+   This may be a user-run/manual step when the user chooses to defer it.
+
+Prefer a persistent Editor exporter installed with the project template. Drive
+it with a request file under `Library/AIUI`; do not add and delete one-off C#
+scripts under `Assets` for each export. Adding or updating the persistent tool
+may cause one compilation/domain reload during installation, but normal preview
+requests must not.
+
+Before copying or importing a raster asset, compare its content and importer
+settings. Skip unchanged files and call `SaveAndReimport` only when the required
+Sprite settings differ. A preview may rebuild its target Prefab, but it must not
+reimport unchanged source images or run finalization/release work implicitly.
+
+Run finalization as one persistent `Library/AIUI` request: pack the approved
+atlas, replace Prefab Sprite references through Unity APIs, validate expected
+Sprites and bindings, then write a result file containing status and duration.
+Do not use an `Assets` marker, Editor-log scraping, or a temporary script as the
+completion signal. If a request remains unconsumed for five seconds, inspect
+the installed runner/import state immediately instead of waiting through a
+long generic timeout. Template/Skill validation belongs to tool changes, not
+ordinary UI-content finalization.
+
 ## Stage 7 — Unity binding export (combined initialization and member export)
 
 Read `unity-code-binding.md` before changing code or attaching scripts. Start

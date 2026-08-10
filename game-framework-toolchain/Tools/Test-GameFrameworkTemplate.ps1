@@ -40,7 +40,6 @@ foreach ($forbiddenDirectory in @('Library', 'Temp', 'Logs', 'UserSettings', '.v
 }
 
 $forbiddenPatterns = @(
-    '[\\/]Editor[\\/]AIUI([\\/]|\.meta$)',
     '[\\/]UIReference([\\/]|\.meta$)',
     '[\\/](bag|bagcartoon|baglegendary|shop)([\\/]|\.meta$)',
     '[\\/](bag|bagcartoon|baglegendary|shop)\.png(\.meta)?$'
@@ -50,6 +49,21 @@ Get-ChildItem -LiteralPath $ProjectFiles -File -Recurse -Force | ForEach-Object 
         if ($_.FullName -match $pattern) {
             $errors.Add("Sample-only file in template: $($_.FullName.Substring($ProjectFiles.Length + 1))")
             break
+        }
+    }
+}
+
+$allowedAiuiFiles = @(
+    'Assets\Editor\AIUI.meta',
+    'Assets\Editor\AIUI\AIUIExportQueue.cs',
+    'Assets\Editor\AIUI\AIUIExportQueue.cs.meta'
+)
+$aiuiRoot = Join-Path $ProjectFiles 'Assets\Editor\AIUI'
+if (Test-Path -LiteralPath $aiuiRoot) {
+    Get-ChildItem -LiteralPath $aiuiRoot -File -Recurse -Force | ForEach-Object {
+        $relative = $_.FullName.Substring($ProjectFiles.Length + 1)
+        if ($relative -notin $allowedAiuiFiles) {
+            $errors.Add("Temporary AIUI exporter in template: $relative")
         }
     }
 }
