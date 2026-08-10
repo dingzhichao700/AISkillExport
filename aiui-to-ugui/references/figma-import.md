@@ -53,6 +53,12 @@ ItemSlot_<row>_<column>
 - Preserve each resource's intended pixel dimensions and proportions.
 - Export to Unity from the production frame only. Never treat the resource
   container or a decorative source sheet as production UI.
+- Keep exactly one resource master per unique bitmap asset. Multiple production
+  nodes may reference that master; do not tile duplicate masters for identical
+  pixels or for left/right instances of the same art.
+- Treat the resource container as a visual audit and mapping surface, not as an
+  atlas or the sole source of Unity export truth. The formal manifests, actual
+  PNG files, and production-node references define the export set.
 
 ## Make local importers safe to rerun
 

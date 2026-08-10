@@ -96,6 +96,23 @@ explicit requirement. Record:
 Reject opaque green, white, or other matte backgrounds when transparent output
 is required. Check edge halos and unintended neighboring pixels.
 
+### Incremental revisions and asset identity
+
+- Freeze approved, unaffected nodes and assets. Regenerate only the declared
+  change set, then run one low-cost global consistency check.
+- Separate runtime-object identity from image-asset identity. Independent
+  runtime objects may share one bitmap when their approved pixels are the same.
+- Deduplicate identical visual resources across isolated PNGs, Figma resource
+  masters, Unity atlas sources, and manifest asset IDs. Do not duplicate a
+  bitmap merely because several nodes use it.
+- Split objects with different gameplay semantics into independent nodes even
+  when they appear as one composition in a mockup. Record their roles and
+  independent runtime requirements in the Blueprint.
+- Enforce semantic appearance constraints declared by the user; do not replace
+  a weapon pod, companion, or other role with a visually adjacent category.
+- Deliver visual image resources as raster PNGs. Keep text editable and record
+  its approved weight, size, alignment, bounds, and effects.
+
 Use tight visual bounds for isolated PNG assets:
 
 - Crop fully transparent outer rows and columns unless the Blueprint declares

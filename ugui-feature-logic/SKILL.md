@@ -24,6 +24,14 @@ Use this skill for Unity uGUI feature windows that already have an approved pref
 - If a window listens to messages, open-time registration and close-time cleanup should be paired, usually through `AddLis` and `RemoveLis`.
 - `BasePanel` window prefabs should use a centered root pivot by default unless the design explicitly requires otherwise.
 - If Unity shows an editor/runtime load failure but the built player or Addressables build works, check registration state first: duplicate Addressables entries, stale paths, GUID mismatch, or leftover imported copies.
+- Keep runtime-object identity separate from Sprite identity. Independent
+  GameObjects may share one Sprite and still own separate movement, visibility,
+  firing, upgrade, and interaction state.
+- Do not duplicate a bitmap solely to represent left/right or repeated runtime
+  instances. Use separate assets only when their approved pixels or import
+  settings differ.
+- Preserve approved art, layout, text bounds, font weight, alignment, and text
+  effects during logic changes unless the user explicitly changes them.
 
 ## Workflow
 
