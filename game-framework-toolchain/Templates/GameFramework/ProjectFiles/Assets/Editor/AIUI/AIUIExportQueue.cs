@@ -214,6 +214,7 @@ public static class AIUIExportQueue {
                     image.sprite = sprites[image.sprite.name];
                     replaced.Add(image.sprite.name);
                 }
+                NormalizeRectTransformGeometry(root);
                 PrefabUtility.SaveAsPrefabAsset(root, prefabPath);
             } finally {
                 PrefabUtility.UnloadPrefabContents(root);
@@ -224,6 +225,19 @@ public static class AIUIExportQueue {
         }
         AssetDatabase.SaveAssets();
         Debug.Log("[AIUI Finalize] atlas references applied to " + prefabPaths.Length + " Prefab(s)");
+    }
+
+    static void NormalizeRectTransformGeometry(GameObject root) {
+        foreach (RectTransform rectTransform in root.GetComponentsInChildren<RectTransform>(true)) {
+            Vector2 anchoredPosition = rectTransform.anchoredPosition;
+            Vector2 sizeDelta = rectTransform.sizeDelta;
+            rectTransform.anchoredPosition = new Vector2(
+                Mathf.Round(anchoredPosition.x), Mathf.Round(anchoredPosition.y));
+            rectTransform.sizeDelta = new Vector2(
+                Mathf.Round(sizeDelta.x), Mathf.Round(sizeDelta.y));
+            EditorUtility.SetDirty(rectTransform);
+        }
+        EditorUtility.SetDirty(root);
     }
 
     static void Validate(Request request) {

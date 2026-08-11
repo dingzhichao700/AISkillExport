@@ -32,6 +32,9 @@ Use this skill for Unity uGUI feature windows that already have an approved pref
   settings differ.
 - Preserve approved art, layout, text bounds, font weight, alignment, and text
   effects during logic changes unless the user explicitly changes them.
+- Preserve the approved one-to-one bitmap size chain during logic changes:
+  non-scalable PNG pixels, Figma production bounds, and Unity Image bounds stay
+  identical, and Prefab RectTransform positions and sizes remain integers.
 - For a runtime value display, keep the fixed background private and bind only
   the dynamic fill unless another layer genuinely changes at runtime. A normal
   full-state fill may use `Image.Type = Filled`; a directionally sliced fill

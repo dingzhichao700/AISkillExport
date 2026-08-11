@@ -123,6 +123,24 @@ is required. Check edge halos and unintended neighboring pixels.
 - Deliver visual image resources as raster PNGs. Keep text editable and record
   its approved weight, size, alignment, bounds, and effects.
 
+### Bitmap one-to-one size chain
+
+- For every non-scalable bitmap, use the approved production display bounds as
+  the single size authority. The isolated PNG pixel size, its visible size in
+  the approved high-fidelity composition, the Figma resource master, every
+  production instance, and the Unity `Image` RectTransform must have identical
+  integer width and height.
+- Do not preserve arbitrary image-provider supersampling or resize the same
+  bitmap independently at different stages. Normalize it once after tight
+  cropping, then propagate the same bytes and dimensions through Figma and
+  Unity.
+- A larger interaction target belongs to a separate parent hit area and must
+  not change the bitmap canvas or visual node size.
+- Explicitly scalable resources such as sliced, tiled, filled, masked, or
+  scrolling images may have different source and display dimensions. Record
+  their scaling mechanism, source size, display size, and required borders;
+  never treat an undeclared mismatch as scaling intent.
+
 Use tight visual bounds for isolated PNG assets:
 
 - Crop fully transparent outer rows and columns unless the Blueprint declares
@@ -237,6 +255,11 @@ Record:
 
 Do not copy the run manifest into the Unity project unless project rules or the
 user require it.
+
+All generated Prefab RectTransform geometry must be pixel-aligned: anchored
+positions and width/height values are integers. Round at the Figma-to-Unity
+boundary using one deterministic rule and validate the serialized Prefab; do
+not leave fractional geometry for later manual cleanup.
 
 ### Addressables execution mode
 
