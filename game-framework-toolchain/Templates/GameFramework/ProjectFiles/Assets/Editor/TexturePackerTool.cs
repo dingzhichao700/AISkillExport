@@ -180,6 +180,11 @@ namespace TexturePackerImporter {
                 string absolutePath = file.FullName.Replace("\\", "/");
                 string assetPath = "Assets" + absolutePath.Replace(appPath, "");
                 Sprite sprite = AssetDatabase.LoadAssetAtPath<Sprite>(assetPath);
+                if (sprite == null) {
+                    AssetDatabase.ImportAsset(assetPath,
+                        ImportAssetOptions.ForceSynchronousImport | ImportAssetOptions.ForceUpdate);
+                    sprite = AssetDatabase.LoadAssetAtPath<Sprite>(assetPath);
+                }
                 if (sprite == null)
                     throw new InvalidOperationException("图集源图未按 Sprite 导入：" + assetPath);
                 if (!allowLargeSprites && sprite.rect.width >= LargeBackgroundMinWidth &&
