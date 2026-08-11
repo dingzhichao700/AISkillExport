@@ -32,6 +32,12 @@ Use this skill for Unity uGUI feature windows that already have an approved pref
   settings differ.
 - Preserve approved art, layout, text bounds, font weight, alignment, and text
   effects during logic changes unless the user explicitly changes them.
+- For a runtime value display, keep the fixed background private and bind only
+  the dynamic fill unless another layer genuinely changes at runtime. A normal
+  full-state fill may use `Image.Type = Filled`; a directionally sliced fill
+  must set Border only on its stretched axis, keep the perpendicular Image size
+  equal to the bitmap size, and change length, mask, or segments so required
+  end caps are not clipped. Clamp values independently from bitmap geometry.
 
 ## Workflow
 

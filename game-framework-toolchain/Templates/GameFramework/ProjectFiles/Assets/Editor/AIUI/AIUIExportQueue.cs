@@ -78,7 +78,17 @@ public static class AIUIExportQueue {
         public string atlasPath;
         public bool keepTransparentBounds = true;
         public string[] spriteNames;
+        public SpriteBorderSetting[] spriteBorders;
         public LooseSpriteReplacement[] looseSpriteReplacements;
+    }
+
+    [Serializable]
+    public class SpriteBorderSetting {
+        public string assetPath;
+        public float left;
+        public float bottom;
+        public float right;
+        public float top;
     }
 
     [Serializable]
@@ -139,6 +149,8 @@ public static class AIUIExportQueue {
             throw new InvalidOperationException("atlasSourcePath must be under Assets/Art/atlasSource");
         if (request.spriteNames == null || request.spriteNames.Length == 0)
             throw new InvalidOperationException("spriteNames are required");
+
+        ApplySpriteBorders(request.spriteBorders);
 
         Dictionary<string, Sprite> looseSprites = new Dictionary<string, Sprite>();
         if (request.looseSpriteReplacements != null) {
@@ -258,6 +270,35 @@ public static class AIUIExportQueue {
         importer.alphaIsTransparency = true;
         importer.mipmapEnabled = false;
         importer.SaveAndReimport();
+    }
+
+    static void ApplySpriteBorders(SpriteBorderSetting[] settings) {
+        if (settings == null) return;
+        foreach (SpriteBorderSetting setting in settings) {
+            if (string.IsNullOrEmpty(setting.assetPath) ||
+                !setting.assetPath.StartsWith("Assets/Art/atlasSource/"))
+                throw new InvalidOperationException("Sprite Border asset must be under Assets/Art/atlasSource: " + setting.assetPath);
+            TextureImporter importer = AssetImporter.GetAtPath(setting.assetPath) as TextureImporter;
+            if (importer == null) {
+                AssetDatabase.ImportAsset(setting.assetPath,
+                    ImportAssetOptions.ForceSynchronousImport | ImportAssetOptions.ForceUpdate);
+                importer = AssetImporter.GetAtPath(setting.assetPath) as TextureImporter;
+            }
+            if (importer == null)
+                throw new InvalidOperationException("Sprite Border texture not found: " + setting.assetPath);
+
+            Vector4 expected = new Vector4(setting.left, setting.bottom, setting.right, setting.top);
+            TextureImporterSettings textureSettings = new TextureImporterSettings();
+            importer.ReadTextureSettings(textureSettings);
+            if (textureSettings.spriteBorder == expected) continue;
+            textureSettings.spriteBorder = expected;
+            importer.SetTextureSettings(textureSettings);
+            importer.SaveAndReimport();
+
+            Sprite sprite = AssetDatabase.LoadAssetAtPath<Sprite>(setting.assetPath);
+            if (sprite == null || sprite.border != expected)
+                throw new InvalidOperationException("Sprite Border import verification failed: " + setting.assetPath);
+        }
     }
 
     static void GeneratePreview(Request request) {

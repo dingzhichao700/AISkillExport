@@ -93,6 +93,16 @@ explicit requirement. Record:
 - source mockup and Blueprint revision;
 - slicing metadata when applicable.
 
+### Value-driven progress visuals
+
+- A progress, health, charge, cooldown, or other runtime value display must not bake its current value into one composited bitmap. Keep the fixed background/trough and dynamic fill as separate raster assets; split borders, ticks, glow, or overlays further only when they need independent control.
+- Record the background display bounds, usable fill-track bounds, insets, alignment origin, direction, and initial normalized value. Runtime values belong to structure/state data, not to bitmap pixels.
+- For a normal bitmap driven by clipping or `Image.Type = Filled`, the fill asset must represent the complete 100% visual state.
+- A background or fill may instead be a directionally sliced asset whose source length is independent from its final display length. Set Border only on the stretched axis: horizontal stretching uses left/right Border and keeps the bitmap height equal to the Image height; vertical stretching uses top/bottom Border and keeps the bitmap width equal to the Image width. Set all four sides only when both axes are intentionally scalable. Record the active Border values and minimum safe display size; never shrink it until opposite caps or corners overlap.
+- Choose the runtime mechanism from the approved edge behavior. When rounded end caps must remain intact at arbitrary values, use a mask, segmented structure, or directionally sliced image whose length changes; do not directly clip away the required cap.
+- In Figma resource masters, Unity atlas sources, Prefabs, and manifests, keep background and fill independently addressable. Export only the layers that runtime logic controls as binding members; a static background remains private by default.
+- For an approved composited source, prefer deterministic separation and update only the affected assets, Prefab, and handoff records. Do not regenerate an unchanged screen or call an image model unless missing pixels genuinely require reconstruction.
+
 Reject opaque green, white, or other matte backgrounds when transparent output
 is required. Check edge halos and unintended neighboring pixels.
 
