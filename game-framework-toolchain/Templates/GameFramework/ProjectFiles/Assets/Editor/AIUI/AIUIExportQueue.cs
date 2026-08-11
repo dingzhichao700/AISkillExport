@@ -28,6 +28,7 @@ public static class AIUIExportQueue {
         public float width = 720;
         public float height = 1280;
         public Node[] nodes;
+        public bool initializeBinding;
         public Binding binding;
     }
 
@@ -46,6 +47,7 @@ public static class AIUIExportQueue {
         public string color = "#FFFFFFFF";
         public string shadowColor = "#00000000";
         public float shadowOffsetY;
+        public bool omitLabel;
         public float labelX;
         public float labelY;
         public float labelWidth;
@@ -71,10 +73,18 @@ public static class AIUIExportQueue {
     public class FinalizeRequest {
         public string requestId;
         public string prefabPath;
+        public string[] prefabPaths;
         public string atlasSourcePath;
         public string atlasPath;
         public bool keepTransparentBounds = true;
         public string[] spriteNames;
+        public LooseSpriteReplacement[] looseSpriteReplacements;
+    }
+
+    [Serializable]
+    public class LooseSpriteReplacement {
+        public string spriteName;
+        public string assetPath;
     }
 
     static AIUIExportQueue() {
@@ -100,9 +110,15 @@ public static class AIUIExportQueue {
                 File.Delete(FinalizePendingPath);
             }
         } catch (Exception exception) {
-            string resultPath = File.Exists(PendingPath) ? ResultPath : FinalizeResultPath;
+            string activePath = File.Exists(PendingPath) ? PendingPath : FinalizePendingPath;
+            string resultPath = activePath == PendingPath ? ResultPath : FinalizeResultPath;
             WriteResult(resultPath, null, "failed", exception.ToString(), stopwatch.ElapsedMilliseconds);
             Debug.LogException(exception);
+            if (File.Exists(activePath)) {
+                string failedPath = activePath + ".failed";
+                if (File.Exists(failedPath)) File.Delete(failedPath);
+                File.Move(activePath, failedPath);
+            }
         } finally {
             running = false;
         }
@@ -110,8 +126,13 @@ public static class AIUIExportQueue {
 
     static void Finalize(FinalizeRequest request) {
         if (request == null) throw new InvalidOperationException("AIUI finalize request is empty");
-        if (string.IsNullOrEmpty(request.prefabPath) || !request.prefabPath.StartsWith("Assets/Prefab/"))
-            throw new InvalidOperationException("prefabPath must be under Assets/Prefab");
+        string[] prefabPaths = request.prefabPaths != null && request.prefabPaths.Length > 0
+            ? request.prefabPaths
+            : new[] { request.prefabPath };
+        foreach (string prefabPath in prefabPaths) {
+            if (string.IsNullOrEmpty(prefabPath) || !prefabPath.StartsWith("Assets/Prefab/"))
+                throw new InvalidOperationException("Every prefab path must be under Assets/Prefab");
+        }
         if (string.IsNullOrEmpty(request.atlasPath) || !request.atlasPath.StartsWith("Assets/Art/atlas/"))
             throw new InvalidOperationException("atlasPath must be under Assets/Art/atlas");
         if (string.IsNullOrEmpty(request.atlasSourcePath) || !request.atlasSourcePath.StartsWith("Assets/Art/atlasSource/"))
@@ -119,9 +140,47 @@ public static class AIUIExportQueue {
         if (request.spriteNames == null || request.spriteNames.Length == 0)
             throw new InvalidOperationException("spriteNames are required");
 
+        Dictionary<string, Sprite> looseSprites = new Dictionary<string, Sprite>();
+        if (request.looseSpriteReplacements != null) {
+            foreach (LooseSpriteReplacement replacement in request.looseSpriteReplacements) {
+                if (string.IsNullOrEmpty(replacement.spriteName))
+                    throw new InvalidOperationException("Loose Sprite replacement requires spriteName");
+                if (string.IsNullOrEmpty(replacement.assetPath) ||
+                    !replacement.assetPath.StartsWith("Assets/Art/unpack/"))
+                    throw new InvalidOperationException("Loose Sprite must be under Assets/Art/unpack: " + replacement.assetPath);
+                EnsureSpriteImporter(replacement.assetPath);
+                Sprite sprite = AssetDatabase.LoadAssetAtPath<Sprite>(replacement.assetPath);
+                if (sprite == null) throw new InvalidOperationException("Loose Sprite not found: " + replacement.assetPath);
+                looseSprites[replacement.spriteName] = sprite;
+            }
+        }
+
+        HashSet<string> looseReplaced = new HashSet<string>();
+        if (looseSprites.Count > 0) {
+            foreach (string prefabPath in prefabPaths) {
+                GameObject root = PrefabUtility.LoadPrefabContents(prefabPath);
+                try {
+                    foreach (Image image in root.GetComponentsInChildren<Image>(true)) {
+                        if (image.sprite == null || !looseSprites.TryGetValue(image.sprite.name, out Sprite looseSprite))
+                            continue;
+                        looseReplaced.Add(image.sprite.name);
+                        image.sprite = looseSprite;
+                    }
+                    PrefabUtility.SaveAsPrefabAsset(root, prefabPath);
+                } finally {
+                    PrefabUtility.UnloadPrefabContents(root);
+                }
+            }
+            foreach (string spriteName in looseSprites.Keys) {
+                if (!looseReplaced.Contains(spriteName))
+                    throw new InvalidOperationException("No Prefab uses loose Sprite replacement: " + spriteName);
+            }
+        }
+
         TexturePackerImporter.TexturePackerTool.PackAtlasSourceAssetPath(
             request.atlasSourcePath, trimTrans: !request.keepTransparentBounds);
-        AssetDatabase.Refresh();
+        AssetDatabase.ImportAsset(request.atlasPath,
+            ImportAssetOptions.ForceSynchronousImport | ImportAssetOptions.ForceUpdate);
         if (AssetImporter.GetAtPath(request.atlasPath) == null)
             throw new InvalidOperationException("Atlas generation failed: " + request.atlasPath);
 
@@ -133,24 +192,26 @@ public static class AIUIExportQueue {
             if (!sprites.ContainsKey(spriteName)) throw new InvalidOperationException("Atlas Sprite not found: " + spriteName);
         }
 
-        GameObject root = PrefabUtility.LoadPrefabContents(request.prefabPath);
-        try {
-            HashSet<string> expected = new HashSet<string>(request.spriteNames);
-            HashSet<string> replaced = new HashSet<string>();
-            foreach (Image image in root.GetComponentsInChildren<Image>(true)) {
-                if (image.sprite == null || !expected.Contains(image.sprite.name)) continue;
-                image.sprite = sprites[image.sprite.name];
-                replaced.Add(image.sprite.name);
+        HashSet<string> expected = new HashSet<string>(request.spriteNames);
+        HashSet<string> replaced = new HashSet<string>();
+        foreach (string prefabPath in prefabPaths) {
+            GameObject root = PrefabUtility.LoadPrefabContents(prefabPath);
+            try {
+                foreach (Image image in root.GetComponentsInChildren<Image>(true)) {
+                    if (image.sprite == null || !expected.Contains(image.sprite.name)) continue;
+                    image.sprite = sprites[image.sprite.name];
+                    replaced.Add(image.sprite.name);
+                }
+                PrefabUtility.SaveAsPrefabAsset(root, prefabPath);
+            } finally {
+                PrefabUtility.UnloadPrefabContents(root);
             }
-            foreach (string spriteName in expected) {
-                if (!replaced.Contains(spriteName)) throw new InvalidOperationException("Prefab does not use Sprite: " + spriteName);
-            }
-            PrefabUtility.SaveAsPrefabAsset(root, request.prefabPath);
-        } finally {
-            PrefabUtility.UnloadPrefabContents(root);
+        }
+        foreach (string spriteName in expected) {
+            if (!replaced.Contains(spriteName)) throw new InvalidOperationException("No Prefab uses Sprite: " + spriteName);
         }
         AssetDatabase.SaveAssets();
-        Debug.Log("[AIUI Finalize] atlas references applied: " + request.prefabPath);
+        Debug.Log("[AIUI Finalize] atlas references applied to " + prefabPaths.Length + " Prefab(s)");
     }
 
     static void Validate(Request request) {
@@ -167,7 +228,8 @@ public static class AIUIExportQueue {
                 throw new InvalidOperationException("Parent must appear before child: " + node.parent + " -> " + node.name);
             if (node.kind == "image" || node.kind == "button") EnsureSpriteImporter(node.assetPath);
         }
-        if (request.binding != null) {
+        if (request.initializeBinding) {
+            if (request.binding == null) throw new InvalidOperationException("binding is required when initializeBinding is true");
             if (string.IsNullOrEmpty(request.binding.csharpAssetPath) ||
                 !request.binding.csharpAssetPath.StartsWith("Assets/Scripts/"))
                 throw new InvalidOperationException("binding.csharpAssetPath must be under Assets/Scripts");
@@ -181,6 +243,10 @@ public static class AIUIExportQueue {
 
     static void EnsureSpriteImporter(string path) {
         TextureImporter importer = AssetImporter.GetAtPath(path) as TextureImporter;
+        if (importer == null && File.Exists(path)) {
+            AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceSynchronousImport | ImportAssetOptions.ForceUpdate);
+            importer = AssetImporter.GetAtPath(path) as TextureImporter;
+        }
         if (importer == null) throw new InvalidOperationException("Missing texture: " + path);
         bool changed = importer.textureType != TextureImporterType.Sprite ||
                        importer.spriteImportMode != SpriteImportMode.Single ||
@@ -215,7 +281,7 @@ public static class AIUIExportQueue {
             parents[node.name] = created;
         }
 
-        if (request.binding != null) ConfigureBinding(root, parents, request.binding);
+        if (request.initializeBinding) ConfigureBinding(root, parents, request.binding);
 
         string projectRoot = Directory.GetParent(Application.dataPath).FullName;
         string prefabDirectory = Path.GetDirectoryName(request.prefabPath.Replace('/', Path.DirectorySeparatorChar));
@@ -323,18 +389,20 @@ public static class AIUIExportQueue {
         Button button = go.GetComponent<Button>();
         button.targetGraphic = image;
         button.transition = Selectable.Transition.None;
-        Node labelNode = new Node {
-            name = "txtLabel", kind = "text", text = node.text,
-            x = node.labelX, y = node.labelY, width = node.labelWidth, height = node.labelHeight,
-            fontSize = node.fontSize, color = node.labelColor,
-            shadowColor = node.shadowColor, shadowOffsetY = node.shadowOffsetY
-        };
-        RectTransform labelRect = CreateText(rect, labelNode, fontPath);
         GameButton gameButton = go.GetComponent<GameButton>();
         gameButton.text = node.text;
-        SerializedObject serialized = new SerializedObject(gameButton);
-        serialized.FindProperty("label").objectReferenceValue = labelRect.GetComponent<TextMeshProUGUI>();
-        serialized.ApplyModifiedPropertiesWithoutUndo();
+        if (!node.omitLabel) {
+            Node labelNode = new Node {
+                name = "txtLabel", kind = "text", text = node.text,
+                x = node.labelX, y = node.labelY, width = node.labelWidth, height = node.labelHeight,
+                fontSize = node.fontSize, color = node.labelColor,
+                shadowColor = node.shadowColor, shadowOffsetY = node.shadowOffsetY
+            };
+            RectTransform labelRect = CreateText(rect, labelNode, fontPath);
+            SerializedObject serialized = new SerializedObject(gameButton);
+            serialized.FindProperty("label").objectReferenceValue = labelRect.GetComponent<TextMeshProUGUI>();
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+        }
         return rect;
     }
 
