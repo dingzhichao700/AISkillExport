@@ -32,6 +32,11 @@ Use this skill for Unity uGUI feature windows that already have an approved pref
   settings differ.
 - Preserve approved art, layout, text bounds, font weight, alignment, and text
   effects during logic changes unless the user explicitly changes them.
+- Add components and behaviour scripts only when the implemented feature logic
+  actually consumes them or Unity enforces the dependency. Do not retain or
+  introduce speculative `CanvasGroup`, animation, raycast, or helper
+  components; preserve explicitly used components and remove only those whose
+  lack of consumers has been verified.
 - Preserve the approved one-to-one bitmap size chain during logic changes:
   non-scalable PNG pixels, Figma production bounds, and Unity Image bounds stay
   identical, and Prefab RectTransform positions and sizes remain integers.
@@ -41,6 +46,14 @@ Use this skill for Unity uGUI feature windows that already have an approved pref
   must set Border only on its stretched axis, keep the perpendicular Image size
   equal to the bitmap size, and change length, mask, or segments so required
   end caps are not clipped. Clamp values independently from bitmap geometry.
+- Before updating a progress-like display, require explicit current value,
+  full-state value, full-state display length, minimum safe length, direction,
+  and runtime mechanism. Use `Clamp(current / full, 0, 1)` and calculate the
+  visible length from the declared full-state length, never from geometry left
+  by a previous runtime update. Restore that baseline on reopen or pool reuse.
+- Keep business maxima separate from approved bitmap geometry. Changing a
+  maximum changes the ratio only. At zero, use an explicit empty state rather
+  than presenting a sliced fill's minimum safe length as remaining progress.
 
 ## Workflow
 

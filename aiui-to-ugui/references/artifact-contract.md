@@ -96,6 +96,9 @@ explicit requirement. Record:
 ### Value-driven progress visuals
 
 - A progress, health, charge, cooldown, or other runtime value display must not bake its current value into one composited bitmap. Keep the fixed background/trough and dynamic fill as separate raster assets; split borders, ticks, glow, or overlays further only when they need independent control.
+- Every value-driven display must declare its current value, full-state value, full-state display length, minimum safe display length, direction, and runtime mechanism. Compute its normalized value as `Clamp(current / full, 0, 1)` and derive the visible length from the declared full-state display length.
+- The full-state display length must come from the approved design, Prefab, or explicit configuration. Never infer it from a RectTransform that runtime code may already have changed. On window reopen or object reuse, restore the declared display baseline before refreshing from current data.
+- Keep bitmap geometry independent from business values. A changed maximum value alters the normalized ratio, not the approved full-state display length. When a sliced fill reaches zero, use an explicit empty state instead of showing its minimum safe length as false remaining progress.
 - Record the background display bounds, usable fill-track bounds, insets, alignment origin, direction, and initial normalized value. Runtime values belong to structure/state data, not to bitmap pixels.
 - For a normal bitmap driven by clipping or `Image.Type = Filled`, the fill asset must represent the complete 100% visual state.
 - A background or fill may instead be a directionally sliced asset whose source length is independent from its final display length. Set Border only on the stretched axis: horizontal stretching uses left/right Border and keeps the bitmap height equal to the Image height; vertical stretching uses top/bottom Border and keeps the bitmap width equal to the Image width. Set all four sides only when both axes are intentionally scalable. Record the active Border values and minimum safe display size; never shrink it until opposite caps or corners overlap.
@@ -240,6 +243,13 @@ Example:
 ```
 
 ## Unity handoff
+
+### Component minimality
+
+- Every exported component or behaviour must have a current runtime consumer, an explicit design or feature requirement, or a Unity-enforced dependency. Do not attach `CanvasGroup`, behaviour scripts, animation helpers, raycast controllers, or other components preemptively because they might be useful later.
+- A panel root uses only the components required by the current panel framework. Add `CanvasGroup` only when whole-window alpha, interaction, or raycast behavior is explicitly declared and implemented.
+- A custom control receives only dependencies its current implementation actually reads. Merely caching a component without using it is not a valid dependency.
+- Validate component counts after export. Remove confirmed unconsumed components without changing hierarchy, geometry, art, bindings, or required Unity components.
 
 Record:
 
