@@ -6,6 +6,8 @@ using System.Reflection;
 using System.Text.RegularExpressions;
 using TMPro;
 using UnityEditor;
+using UnityEditor.AddressableAssets;
+using UnityEditor.AddressableAssets.Settings;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -14,7 +16,7 @@ using UnityEngine.UI;
 /// </summary>
 [InitializeOnLoad]
 public static class AIUIExportQueue {
-    const string ToolVersion = "0.3.0";
+    const string ToolVersion = "0.4.0";
     const string StatusPath = "Library/AIUI/editor-status.json";
     const string ControlPendingPath = "Library/AIUI/pending-control.json";
     const string ControlResultPath = "Library/AIUI/control-result.json";
@@ -41,6 +43,7 @@ public static class AIUIExportQueue {
         public Node[] nodes;
         public bool initializeBinding;
         public Binding binding;
+        public ChildBinding[] childBindings;
     }
 
     [Serializable]
@@ -54,6 +57,14 @@ public static class AIUIExportQueue {
         public float y;
         public float width;
         public float height;
+        public float rotation;
+        public bool rotateAroundCenter;
+        public string imageType;
+        public float borderLeft;
+        public float borderBottom;
+        public float borderRight;
+        public float borderTop;
+        public bool inactive;
         public float fontSize;
         public string color = "#FFFFFFFF";
         public string shadowColor = "#00000000";
@@ -78,6 +89,21 @@ public static class AIUIExportQueue {
     public class Member {
         public string node;
         public string type;
+        public bool isCustomClass;
+    }
+
+    [Serializable]
+    public class ChildBinding {
+        public string node;
+        public string csharpAssetPath;
+        public Member[] members;
+        public SpriteField[] spriteFields;
+    }
+
+    [Serializable]
+    public class SpriteField {
+        public string name;
+        public string assetPath;
     }
 
     [Serializable]
@@ -91,6 +117,14 @@ public static class AIUIExportQueue {
         public string[] spriteNames;
         public SpriteBorderSetting[] spriteBorders;
         public LooseSpriteReplacement[] looseSpriteReplacements;
+        public AssetMove[] assetMoves;
+        public string addressableGroupName;
+    }
+
+    [Serializable]
+    public class AssetMove {
+        public string sourcePath;
+        public string targetPath;
     }
 
     [Serializable]
@@ -188,7 +222,8 @@ public static class AIUIExportQueue {
         try {
             ControlRequest request = JsonUtility.FromJson<ControlRequest>(ReadRequestText(ControlPendingPath));
             requestId = request.requestId;
-            if (request.action != "stopPlay") throw new InvalidOperationException("Unsupported AIUI control action: " + request.action);
+            if (request.action != "stopPlay")
+                throw new InvalidOperationException("Unsupported AIUI control action: " + request.action);
             if (EditorApplication.isPlayingOrWillChangePlaymode) {
                 EditorApplication.isPlaying = false;
                 return true;
@@ -298,6 +333,8 @@ public static class AIUIExportQueue {
         if (request.spriteNames == null || request.spriteNames.Length == 0)
             throw new InvalidOperationException("spriteNames are required");
 
+        ApplyAssetMoves(request.assetMoves);
+
         ApplySpriteBorders(request.spriteBorders);
 
         Dictionary<string, Sprite> looseSprites = new Dictionary<string, Sprite>();
@@ -343,6 +380,7 @@ public static class AIUIExportQueue {
             ImportAssetOptions.ForceSynchronousImport | ImportAssetOptions.ForceUpdate);
         if (AssetImporter.GetAtPath(request.atlasPath) == null)
             throw new InvalidOperationException("Atlas generation failed: " + request.atlasPath);
+        RegisterAddressable(request.atlasPath, request.addressableGroupName);
 
         Dictionary<string, Sprite> sprites = new Dictionary<string, Sprite>();
         foreach (UnityEngine.Object asset in AssetDatabase.LoadAllAssetsAtPath(request.atlasPath)) {
@@ -373,6 +411,48 @@ public static class AIUIExportQueue {
         }
         AssetDatabase.SaveAssets();
         Debug.Log("[AIUI Finalize] atlas references applied to " + prefabPaths.Length + " Prefab(s)");
+    }
+
+    static void ApplyAssetMoves(AssetMove[] moves) {
+        if (moves == null || moves.Length == 0) return;
+        foreach (AssetMove move in moves) {
+            if (string.IsNullOrEmpty(move.sourcePath) || string.IsNullOrEmpty(move.targetPath) ||
+                !move.sourcePath.StartsWith("Assets/Art/atlasSource/") ||
+                !move.targetPath.StartsWith("Assets/Art/atlasSource/"))
+                throw new InvalidOperationException("Atlas source moves must stay under Assets/Art/atlasSource");
+            if (AssetDatabase.LoadMainAssetAtPath(move.sourcePath) == null)
+                throw new InvalidOperationException("Atlas source asset not found: " + move.sourcePath);
+            if (AssetDatabase.LoadMainAssetAtPath(move.targetPath) != null)
+                throw new InvalidOperationException("Atlas source target already exists: " + move.targetPath);
+            string targetDirectory = Path.GetDirectoryName(move.targetPath).Replace("\\", "/");
+            EnsureAssetFolder(targetDirectory);
+            string error = AssetDatabase.MoveAsset(move.sourcePath, move.targetPath);
+            if (!string.IsNullOrEmpty(error))
+                throw new InvalidOperationException("Atlas source move failed: " + move.sourcePath + " -> " +
+                    move.targetPath + "\n" + error);
+        }
+        AssetDatabase.SaveAssets();
+    }
+
+    static void EnsureAssetFolder(string assetFolder) {
+        if (AssetDatabase.IsValidFolder(assetFolder)) return;
+        string parent = Path.GetDirectoryName(assetFolder).Replace("\\", "/");
+        EnsureAssetFolder(parent);
+        AssetDatabase.CreateFolder(parent, Path.GetFileName(assetFolder));
+    }
+
+    static void RegisterAddressable(string assetPath, string groupName) {
+        if (string.IsNullOrEmpty(groupName)) return;
+        AddressableAssetSettings settings = AddressableAssetSettingsDefaultObject.Settings;
+        if (settings == null) throw new InvalidOperationException("Addressables settings are missing");
+        AddressableAssetGroup group = settings.FindGroup(groupName);
+        if (group == null) throw new InvalidOperationException("Addressables group not found: " + groupName);
+        string guid = AssetDatabase.AssetPathToGUID(assetPath);
+        if (string.IsNullOrEmpty(guid)) throw new InvalidOperationException("Atlas GUID not found: " + assetPath);
+        AddressableAssetEntry entry = settings.CreateOrMoveEntry(guid, group);
+        entry.address = assetPath;
+        settings.SetDirty(AddressableAssetSettings.ModificationEvent.EntryMoved, entry, true);
+        AssetDatabase.SaveAssets();
     }
 
     static void NormalizeRectTransformGeometry(GameObject root) {
@@ -463,6 +543,18 @@ public static class AIUIExportQueue {
         }
     }
 
+    static void EnsureSpriteBorder(string assetPath, float left, float bottom, float right, float top) {
+        TextureImporter importer = AssetImporter.GetAtPath(assetPath) as TextureImporter;
+        if (importer == null) throw new InvalidOperationException("Sprite Border texture not found: " + assetPath);
+        Vector4 expected = new Vector4(left, bottom, right, top);
+        TextureImporterSettings settings = new TextureImporterSettings();
+        importer.ReadTextureSettings(settings);
+        if (settings.spriteBorder == expected) return;
+        settings.spriteBorder = expected;
+        importer.SetTextureSettings(settings);
+        importer.SaveAndReimport();
+    }
+
     static void GeneratePreview(Request request) {
         GameObject root = new GameObject(request.rootName, typeof(RectTransform));
         RectTransform rootRect = root.GetComponent<RectTransform>();
@@ -482,9 +574,15 @@ public static class AIUIExportQueue {
                 default: throw new InvalidOperationException("Unsupported node kind: " + node.kind);
             }
             parents[node.name] = created;
+            if (node.inactive) created.gameObject.SetActive(false);
         }
 
+        if (request.childBindings != null) {
+            foreach (ChildBinding childBinding in request.childBindings)
+                ConfigureChildBinding(parents, childBinding);
+        }
         if (request.initializeBinding) ConfigureBinding(root, parents, request.binding);
+        NormalizeRectTransformGeometry(root);
 
         string projectRoot = Directory.GetParent(Application.dataPath).FullName;
         string prefabDirectory = Path.GetDirectoryName(request.prefabPath.Replace('/', Path.DirectorySeparatorChar));
@@ -504,11 +602,18 @@ public static class AIUIExportQueue {
         int id = 1;
         foreach (Member member in binding.members) {
             GameObject target = nodes[member.node].gameObject;
-            if (target.GetComponent(member.type) == null)
+            Component targetComponent = target.GetComponent(member.type);
+            if (targetComponent == null && member.isCustomClass) {
+                Type memberType = FindComponentType(member.type);
+                if (memberType != null) targetComponent = target.GetComponent(memberType);
+            }
+            if (targetComponent == null)
                 throw new InvalidOperationException("Component " + member.type + " not found on " + member.node);
             binder.uiList.Add(new UIBindComponentData {
                 id = id++, uiName = member.node, uiTypeName = member.type,
-                isCustomClass = false, customClassName = string.Empty, go = target
+                isCustomClass = member.isCustomClass,
+                customClassName = member.isCustomClass ? member.type : string.Empty,
+                go = target
             });
         }
 
@@ -520,6 +625,64 @@ public static class AIUIExportQueue {
         } finally {
             UnityEngine.Object.DestroyImmediate(inspector);
         }
+    }
+
+    static void ConfigureChildBinding(Dictionary<string, RectTransform> nodes, ChildBinding binding) {
+        if (binding == null || string.IsNullOrEmpty(binding.node) || !nodes.TryGetValue(binding.node, out RectTransform target))
+            throw new InvalidOperationException("AIUI child binding node is missing: " + binding?.node);
+
+        string className = Path.GetFileNameWithoutExtension(binding.csharpAssetPath);
+        Type classType = FindComponentType(className);
+        if (classType == null) throw new InvalidOperationException("AIUI child binding class is unavailable: " + className);
+        Component component = target.GetComponent(classType) ?? target.gameObject.AddComponent(classType);
+
+        UIBinder binder = target.GetComponent<UIBinder>() ?? target.gameObject.AddComponent<UIBinder>();
+        binder.csharpAssetPath = binding.csharpAssetPath;
+        binder.csharpAsset = binding.csharpAssetPath;
+        binder.uiList = new List<UIBindComponentData>();
+        int id = 1;
+        if (binding.members != null) {
+            foreach (Member member in binding.members) {
+                GameObject memberTarget = nodes[member.node].gameObject;
+                binder.uiList.Add(new UIBindComponentData {
+                    id = id++, uiName = member.node, uiTypeName = member.type,
+                    isCustomClass = member.isCustomClass,
+                    customClassName = member.isCustomClass ? member.type : string.Empty,
+                    go = memberTarget
+                });
+            }
+        }
+
+        if (binding.spriteFields != null) {
+            SerializedObject serialized = new SerializedObject(component);
+            foreach (SpriteField spriteField in binding.spriteFields) {
+                SerializedProperty property = serialized.FindProperty(spriteField.name);
+                if (property == null) throw new InvalidOperationException(className + " has no Sprite field: " + spriteField.name);
+                property.objectReferenceValue = AssetDatabase.LoadAssetAtPath<Sprite>(spriteField.assetPath);
+                if (property.objectReferenceValue == null)
+                    throw new InvalidOperationException("Sprite asset not found: " + spriteField.assetPath);
+            }
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        Editor inspector = Editor.CreateEditor(binder);
+        try {
+            MethodInfo generate = inspector.GetType().GetMethod("GenerateUiBind", BindingFlags.Instance | BindingFlags.NonPublic);
+            if (generate == null) throw new MissingMethodException(inspector.GetType().FullName, "GenerateUiBind");
+            generate.Invoke(inspector, new object[] { binding.csharpAssetPath });
+        } finally {
+            UnityEngine.Object.DestroyImmediate(inspector);
+        }
+    }
+
+    static Type FindComponentType(string typeName) {
+        Type type = Type.GetType(typeName);
+        if (type != null) return type;
+        foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies()) {
+            type = assembly.GetType(typeName);
+            if (type != null) return type;
+        }
+        return null;
     }
 
     static void EnsureViewClass(string className, Binding binding) {
@@ -553,8 +716,14 @@ public static class AIUIExportQueue {
         RectTransform rect = go.GetComponent<RectTransform>();
         SetTopLeft(rect, parent, node.x, node.y, node.width, node.height);
         Image image = go.GetComponent<Image>();
+        if (string.Equals(node.imageType, "Sliced", StringComparison.OrdinalIgnoreCase))
+            EnsureSpriteBorder(node.assetPath, node.borderLeft, node.borderBottom, node.borderRight, node.borderTop);
         image.sprite = AssetDatabase.LoadAssetAtPath<Sprite>(node.assetPath);
+        image.type = string.Equals(node.imageType, "Sliced", StringComparison.OrdinalIgnoreCase)
+            ? Image.Type.Sliced
+            : Image.Type.Simple;
         image.raycastTarget = false;
+        ApplyRotation(rect, node);
         return rect;
     }
 
@@ -614,6 +783,15 @@ public static class AIUIExportQueue {
         rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(0, 1);
         rect.sizeDelta = new Vector2(width, height);
         rect.anchoredPosition = new Vector2(x, -y);
+    }
+
+    static void ApplyRotation(RectTransform rect, Node node) {
+        if (Mathf.Approximately(node.rotation, 0)) return;
+        if (node.rotateAroundCenter) {
+            rect.pivot = new Vector2(0.5f, 0.5f);
+            rect.anchoredPosition += new Vector2(node.width * 0.5f, -node.height * 0.5f);
+        }
+        rect.localEulerAngles = new Vector3(0, 0, -node.rotation);
     }
 
     static Color ParseColor(string value) {

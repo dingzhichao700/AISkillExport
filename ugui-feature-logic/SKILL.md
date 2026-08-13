@@ -85,6 +85,34 @@ Use this skill for Unity uGUI feature windows that already have an approved pref
   formal configuration source, such as Luban, at the owning type or entry
   point. During validation, treat mismatched comment style, missing member
   spacing, and stale comments that contradict behavior as defects.
+- Put a large, independently responsible, or reusable top-level type in its
+  own same-named file instead of placing it before or after a Panel, View,
+  Control, or Model. Small private-scope helper types may remain together while
+  they are truly local and compact; split them once their state or behavior
+  grows. File extraction must not change type names, visibility, serialization,
+  or runtime behavior.
+- Organize feature-module code by responsibility: keep Panel, View, and Item
+  classes under `view/`; data objects and data-management classes under
+  `model/`; and static constants or static utility classes under `constant/`.
+  Keep one business module under `com/game/{module}/`; do not split one module
+  into per-screen code modules.
+  Put a singleton `{Module}Control` or `{Semantic}Control` that serves as the
+  module's external entry point directly in the module root instead of a
+  `control/` subdirectory. Do not promote an internal helper merely because
+  its name ends with `Control`.
+- Name a module data manager `{Module}Model` and individual data objects
+  `{Semantic}VO`, where VO means Value Object; do not use `Model` for a single
+  record object. Prefer one module-level Model when centralized data management
+  is needed. When a module has a model, expose it as a read-only `model`
+  property on the module singleton so callers use
+  `{Module}Control.ins.model`. Keep business flow in Control and collection,
+  lookup, initialization, and storage boundaries in Model. Views may read
+  display data through the exposed model, but mutations and state transitions
+  must enter through Control business methods instead of modifying a VO.
+- Put prototype static configuration that temporarily replaces a formal config
+  system under `constant/` and document its future source. Do not attach a
+  large configuration type to a Panel or other View file. When moving Unity
+  source files, move their `.meta` files together to preserve GUIDs.
 
 ## Workflow
 
