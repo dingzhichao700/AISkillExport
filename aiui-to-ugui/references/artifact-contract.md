@@ -106,6 +106,15 @@ explicit requirement. Record:
 - In Figma resource masters, Unity atlas sources, Prefabs, and manifests, keep background and fill independently addressable. Export only the layers that runtime logic controls as binding members; a static background remains private by default.
 - For an approved composited source, prefer deterministic separation and update only the affected assets, Prefab, and handoff records. Do not regenerate an unchanged screen or call an image model unless missing pixels genuinely require reconstruction.
 
+### Data-driven sliced connections
+
+- A route, graph edge, connector, or similar data-driven line must be represented by one reusable raster asset per approved visual state, such as bright and dark. Do not bake the complete topology or every connection instance into separate exportable bitmaps.
+- When a connection has protected end caps, declare it as a directionally sliced bitmap. Record source size, fixed perpendicular thickness, stretch axis, and Border values; only the center region may change length.
+- Figma image fills do not provide Unity-style nine-slice or three-slice Border settings. Do not stretch the complete source bitmap, and do not expose `Start` / `Center` / `End` helper nodes in the production hierarchy merely to simulate slicing.
+- Keep one production node per connection. A local importer may pre-render a length-specific three-slice preview bitmap for that node, but the preview is transport-only: exclude it from resource masters, Unity assets, atlases, manifests of exportable assets, and runtime identity.
+- Position and rotate a connection from its declared endpoints. Use an exact two-dimensional transform that maps the local line center at each end to the two endpoint coordinates; do not infer placement from the axis-aligned bounds of an already rotated node.
+- Resource masters contain only the canonical state bitmaps. Record the Figma preview node's canonical source master and Border metadata so Unity export can restore the original Sprite, sliced Image type, dynamic length, and rotation.
+
 Reject opaque green, white, or other matte backgrounds when transparent output
 is required. Check edge halos and unintended neighboring pixels.
 

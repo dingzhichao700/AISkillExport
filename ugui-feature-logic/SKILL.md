@@ -54,6 +54,16 @@ Use this skill for Unity uGUI feature windows that already have an approved pref
 - Keep business maxima separate from approved bitmap geometry. Changing a
   maximum changes the ratio only. At zero, use an explicit empty state rather
   than presenting a sliced fill's minimum safe length as remaining progress.
+- Build data-driven routes and graph connections from reusable state Sprites,
+  not from a whole-route bitmap or per-instance Figma preview images. Keep one
+  runtime `Image` per connection, select its canonical Sprite from current
+  state, set `Image.Type = Sliced`, preserve the declared perpendicular
+  thickness, and change only its length and rotation.
+- Derive every dynamic connection from explicit endpoint data. Place its local
+  centerline start at the source point, calculate length with endpoint
+  distance, and calculate rotation with `Atan2`; do not reuse Figma preview
+  pixels or rotated axis-aligned bounds as runtime geometry. Recompute the
+  state and geometry when topology, unlock state, or endpoint layout changes.
 
 ## Workflow
 
