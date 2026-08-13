@@ -51,6 +51,8 @@ child with its own reference bounds. Do not assume the label fills its parent.
 
 Use stable semantic IDs rather than Figma node IDs.
 
+For progress-like controls, keep structural and visual responsibilities distinct: name the whole control `bar{Semantic}`, its fixed background image `img{Semantic}Bg`, its changing fill `img{Semantic}Fill`, and its numeric label `txt{Semantic}`. Do not name the whole control after the background image.
+
 ## `assets`
 
 For each required art asset, include:

@@ -9,6 +9,7 @@
 - [`docs/目录与分包原则.md`](docs/目录与分包原则.md)：Assets、Group、图集和 UI Prefab 落位。
 - [`docs/模板与导出规范.md`](docs/模板与导出规范.md)：自包含模板、导出器、验证和外部依赖边界。
 - [`docs/UI功能逻辑规范.md`](docs/UI功能逻辑规范.md)：BasePanel 生命周期、监听命名和 C# 换行风格。
+- [`docs/AIUI编辑器队列规范.md`](docs/AIUI编辑器队列规范.md)：Unity 状态识别、Play 控制、请求提交和进程边界。
 - [`docs/README.md`](docs/README.md)：专项文档索引。
 
 专项细节只在对应文档维护，本文不复制完整路径表。

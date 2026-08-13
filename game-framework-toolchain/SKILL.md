@@ -14,6 +14,7 @@ Treat the directory containing this file as the repository root. Resolve every b
 3. Read `docs/模板与导出规范.md` for template, generator, or validation work.
 4. Inspect `git status --short`; preserve unrelated and pre-existing changes.
 5. Classify the request as inspection, generation, repair, or standardization. Do not broaden its scope.
+6. For AIUI preview queues or Unity editor lifecycle control, read `docs/AIUI编辑器队列规范.md`.
 
 ## Generate a sample project
 

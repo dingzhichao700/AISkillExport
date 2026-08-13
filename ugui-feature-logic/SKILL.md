@@ -46,6 +46,11 @@ Use this skill for Unity uGUI feature windows that already have an approved pref
   must set Border only on its stretched axis, keep the perpendicular Image size
   equal to the bitmap size, and change length, mask, or segments so required
   end caps are not clipped. Clamp values independently from bitmap geometry.
+- Name progress-like structures by responsibility: `bar{Semantic}` for the
+  whole control, `img{Semantic}Bg` for its fixed background,
+  `img{Semantic}Fill` for its changing fill, and `txt{Semantic}` for its
+  numeric text. If runtime logic controls the whole control, bind the
+  `bar{Semantic}` container rather than disguising it as a background image.
 - Before updating a progress-like display, require explicit current value,
   full-state value, full-state display length, minimum safe length, direction,
   and runtime mechanism. Use `Clamp(current / full, 0, 1)` and calculate the
@@ -64,6 +69,22 @@ Use this skill for Unity uGUI feature windows that already have an approved pref
   distance, and calculate rotation with `Atan2`; do not reuse Figma preview
   pixels or rotated axis-aligned bounds as runtime geometry. Recompute the
   state and geometry when topology, unlock state, or endpoint layout changes.
+- Use multi-line XML `summary` comments for classes and complex functions with
+  parameters. Use single-line `/**Comment*/` blocks for variables, properties,
+  and simple functions. Keep at least one blank line after a class opening,
+  before its closing brace, and between variables, properties, and functions.
+  Apply this style only to human-authored code. Preserve generated binder
+  regions, third-party code, and other machine-maintained regions in their
+  native format; do not modify a generator solely to restyle its output.
+  Add intent-focused comments at non-obvious lifecycle, state-machine,
+  asynchronous callback, resource-loading, pooling, numeric-rule, and
+  cross-window boundaries. Explain why, prerequisites, or side effects rather
+  than paraphrasing individual statements; generated binder members, trivial
+  assignments, and self-evident properties do not need comments.
+- Mark prototype constants or rules that temporarily replace the project's
+  formal configuration source, such as Luban, at the owning type or entry
+  point. During validation, treat mismatched comment style, missing member
+  spacing, and stale comments that contradict behavior as defects.
 
 ## Workflow
 

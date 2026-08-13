@@ -37,7 +37,6 @@ public class GameButton : BaseView, IPointerEnterHandler, IPointerExitHandler, I
 
     Image _image;
     Button _button;
-    CanvasGroup _canvasGroup;
     Vector3 _normalScale;
     Vector3 _targetScale;
     bool _isPointerDown = false;
@@ -49,7 +48,6 @@ public class GameButton : BaseView, IPointerEnterHandler, IPointerExitHandler, I
 
     void Awake() {
         _button = GetComponent<Button>();
-        _canvasGroup = GetComponent<CanvasGroup>();
         _image = GetComponent<Image>();   // 可为空：支持纯文字按钮
 
         if (label == null) {

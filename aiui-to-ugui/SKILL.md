@@ -153,7 +153,10 @@ validation result.
 - Match the accepted reference panel's local C# formatting, including blank
   lines, newline/brace style, and concise XML class comments. Add focused
   comments to key lifecycle, binding, state-transition, and interaction
-  functions when their intent is not self-evident.
+  functions when their intent is not self-evident. Apply human-authored code
+  style only outside generated binder regions. Preserve generated and
+  machine-maintained regions in their native format, and do not modify the
+  project's generator solely to restyle its output.
 - Limit writes to paths the user placed in scope.
 
 ## Keep the skill clean

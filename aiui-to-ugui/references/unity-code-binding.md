@@ -13,7 +13,10 @@ blank-line/newline style and brace layout. Every generated panel class must
 include a concise XML class summary in the project's established language and
 style. Add brief comments to non-obvious lifecycle, binding-recovery,
 state-transition, and interaction functions; avoid comments for trivial
-assignments.
+assignments. These human-authored comment and spacing rules apply outside
+generated binder regions only. Preserve generated, third-party, and other
+machine-maintained regions in their native format; do not change a generator
+solely to restyle its output.
 
 Read the target repository's governing instructions and inspect representative
 sibling UI implementations before writing. Determine:

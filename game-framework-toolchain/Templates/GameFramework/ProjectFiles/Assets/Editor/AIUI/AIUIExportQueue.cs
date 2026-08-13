@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
+using System.Text.RegularExpressions;
 using TMPro;
 using UnityEditor;
 using UnityEngine;
@@ -13,11 +14,21 @@ using UnityEngine.UI;
 /// </summary>
 [InitializeOnLoad]
 public static class AIUIExportQueue {
+    const string ToolVersion = "0.3.0";
+    const string StatusPath = "Library/AIUI/editor-status.json";
+    const string ControlPendingPath = "Library/AIUI/pending-control.json";
+    const string ControlResultPath = "Library/AIUI/control-result.json";
     const string PendingPath = "Library/AIUI/pending-preview.json";
     const string ResultPath = "Library/AIUI/preview-result.json";
     const string FinalizePendingPath = "Library/AIUI/pending-finalize.json";
     const string FinalizeResultPath = "Library/AIUI/finalize-result.json";
+    const string CleanupPendingPath = "Library/AIUI/pending-cleanup.json";
+    const string CleanupResultPath = "Library/AIUI/cleanup-result.json";
     static bool running;
+    static string activeRequestId = string.Empty;
+    static string activeStage = "idle";
+    static string lastError = string.Empty;
+    static double nextStatusWrite;
 
     [Serializable]
     public class Request {
@@ -97,32 +108,67 @@ public static class AIUIExportQueue {
         public string assetPath;
     }
 
+    [Serializable]
+    public class CleanupRequest {
+        public string requestId;
+        public string[] prefabPaths;
+        public bool removeCanvasGroups;
+    }
+
+    [Serializable]
+    public class ControlRequest {
+        public string requestId;
+        public string action;
+    }
+
     static AIUIExportQueue() {
         EditorApplication.update += Poll;
+        PublishStatus(true);
     }
 
     static void Poll() {
-        if (running || EditorApplication.isCompiling || EditorApplication.isUpdating) return;
-        if (!File.Exists(PendingPath) && !File.Exists(FinalizePendingPath)) return;
+        PublishStatus(false);
+        if (TryHandleControl()) return;
+        if (running || EditorApplication.isCompiling || EditorApplication.isUpdating || EditorApplication.isPlayingOrWillChangePlaymode) return;
+        if (!File.Exists(PendingPath) && !File.Exists(FinalizePendingPath) && !File.Exists(CleanupPendingPath)) return;
+        string activePath = File.Exists(PendingPath) ? PendingPath :
+            File.Exists(FinalizePendingPath) ? FinalizePendingPath : CleanupPendingPath;
+        string resultPath = activePath == PendingPath ? ResultPath :
+            activePath == FinalizePendingPath ? FinalizeResultPath : CleanupResultPath;
         running = true;
+        activeStage = activePath == PendingPath ? "preview" : activePath == FinalizePendingPath ? "finalize" : "cleanup";
+        activeRequestId = TryExtractRequestId(activePath);
+        lastError = string.Empty;
+        PublishStatus(true);
         System.Diagnostics.Stopwatch stopwatch = System.Diagnostics.Stopwatch.StartNew();
         try {
             if (File.Exists(PendingPath)) {
-                Request request = JsonUtility.FromJson<Request>(File.ReadAllText(PendingPath));
+                Request request = JsonUtility.FromJson<Request>(ReadRequestText(PendingPath));
+                activeRequestId = request.requestId;
                 Validate(request);
                 GeneratePreview(request);
                 WriteResult(ResultPath, request.requestId, "passed", null, stopwatch.ElapsedMilliseconds);
                 File.Delete(PendingPath);
-            } else {
-                FinalizeRequest request = JsonUtility.FromJson<FinalizeRequest>(File.ReadAllText(FinalizePendingPath));
+            } else if (File.Exists(FinalizePendingPath)) {
+                FinalizeRequest request = JsonUtility.FromJson<FinalizeRequest>(ReadRequestText(FinalizePendingPath));
+                activeRequestId = request.requestId;
                 Finalize(request);
                 WriteResult(FinalizeResultPath, request.requestId, "passed", null, stopwatch.ElapsedMilliseconds);
                 File.Delete(FinalizePendingPath);
+            } else {
+                CleanupRequest request = JsonUtility.FromJson<CleanupRequest>(ReadRequestText(CleanupPendingPath));
+                activeRequestId = request.requestId;
+                Cleanup(request);
+                WriteResult(CleanupResultPath, request.requestId, "passed", null, stopwatch.ElapsedMilliseconds);
+                File.Delete(CleanupPendingPath);
             }
+        } catch (IOException exception) {
+            lastError = exception.Message;
+            activeStage = "waiting-for-request-file";
+            return;
         } catch (Exception exception) {
-            string activePath = File.Exists(PendingPath) ? PendingPath : FinalizePendingPath;
-            string resultPath = activePath == PendingPath ? ResultPath : FinalizeResultPath;
-            WriteResult(resultPath, null, "failed", exception.ToString(), stopwatch.ElapsedMilliseconds);
+            lastError = exception.ToString();
+            WriteResult(resultPath, activeRequestId, "failed", exception.ToString(), stopwatch.ElapsedMilliseconds);
             Debug.LogException(exception);
             if (File.Exists(activePath)) {
                 string failedPath = activePath + ".failed";
@@ -131,7 +177,109 @@ public static class AIUIExportQueue {
             }
         } finally {
             running = false;
+            if (activeStage != "waiting-for-request-file") activeStage = "idle";
+            PublishStatus(true);
         }
+    }
+
+    static bool TryHandleControl() {
+        if (running || !File.Exists(ControlPendingPath)) return false;
+        string requestId = TryExtractRequestId(ControlPendingPath);
+        try {
+            ControlRequest request = JsonUtility.FromJson<ControlRequest>(ReadRequestText(ControlPendingPath));
+            requestId = request.requestId;
+            if (request.action != "stopPlay") throw new InvalidOperationException("Unsupported AIUI control action: " + request.action);
+            if (EditorApplication.isPlayingOrWillChangePlaymode) {
+                EditorApplication.isPlaying = false;
+                return true;
+            }
+            WriteResult(ControlResultPath, requestId, "passed", null, 0);
+            File.Delete(ControlPendingPath);
+        } catch (IOException) {
+            return true;
+        } catch (Exception exception) {
+            WriteResult(ControlResultPath, requestId, "failed", exception.ToString(), 0);
+            MoveFailed(ControlPendingPath);
+        }
+        PublishStatus(true);
+        return true;
+    }
+
+    static string ReadRequestText(string path) {
+        using (FileStream stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+        using (StreamReader reader = new StreamReader(stream)) return reader.ReadToEnd();
+    }
+
+    static string TryExtractRequestId(string path) {
+        try {
+            Match match = Regex.Match(ReadRequestText(path), "\\\"requestId\\\"\\s*:\\s*\\\"([^\\\"]*)\\\"");
+            return match.Success ? match.Groups[1].Value : string.Empty;
+        } catch { return string.Empty; }
+    }
+
+    static void MoveFailed(string path) {
+        if (!File.Exists(path)) return;
+        string failedPath = path + ".failed";
+        if (File.Exists(failedPath)) File.Delete(failedPath);
+        File.Move(path, failedPath);
+    }
+
+    static void PublishStatus(bool force) {
+        double now = EditorApplication.timeSinceStartup;
+        if (!force && now < nextStatusWrite) return;
+        nextStatusWrite = now + 0.5d;
+        string status = "{\n" +
+            "  \"toolVersion\": \"" + ToolVersion + "\",\n" +
+            "  \"processId\": " + System.Diagnostics.Process.GetCurrentProcess().Id + ",\n" +
+            "  \"isPlaying\": " + Bool(EditorApplication.isPlayingOrWillChangePlaymode) + ",\n" +
+            "  \"isCompiling\": " + Bool(EditorApplication.isCompiling) + ",\n" +
+            "  \"isUpdating\": " + Bool(EditorApplication.isUpdating) + ",\n" +
+            "  \"isRunning\": " + Bool(running) + ",\n" +
+            "  \"stage\": \"" + Escape(activeStage) + "\",\n" +
+            "  \"requestId\": \"" + Escape(activeRequestId) + "\",\n" +
+            "  \"lastError\": \"" + Escape(lastError) + "\"\n" +
+            "}";
+        try { WriteTextAtomic(StatusPath, status); } catch (IOException) { }
+    }
+
+    static string Bool(bool value) { return value ? "true" : "false"; }
+    static string Escape(string value) { return (value ?? string.Empty).Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("\r", "").Replace("\n", "\\n"); }
+
+    static void WriteTextAtomic(string path, string content) {
+        Directory.CreateDirectory(Path.GetDirectoryName(path));
+        string temporaryPath = path + ".tmp." + Guid.NewGuid().ToString("N");
+        File.WriteAllText(temporaryPath, content, new System.Text.UTF8Encoding(false));
+        try {
+            if (File.Exists(path)) File.Replace(temporaryPath, path, null);
+            else File.Move(temporaryPath, path);
+        } catch {
+            if (File.Exists(temporaryPath)) File.Delete(temporaryPath);
+            throw;
+        }
+    }
+
+    static void Cleanup(CleanupRequest request) {
+        if (request == null || request.prefabPaths == null || request.prefabPaths.Length == 0)
+            throw new InvalidOperationException("AIUI cleanup request requires prefabPaths");
+        if (!request.removeCanvasGroups)
+            throw new InvalidOperationException("AIUI cleanup request has no approved cleanup operation");
+        int removed = 0;
+        foreach (string prefabPath in request.prefabPaths) {
+            if (string.IsNullOrEmpty(prefabPath) || !prefabPath.StartsWith("Assets/Prefab/"))
+                throw new InvalidOperationException("Every cleanup prefab path must be under Assets/Prefab");
+            GameObject root = PrefabUtility.LoadPrefabContents(prefabPath);
+            try {
+                foreach (CanvasGroup canvasGroup in root.GetComponentsInChildren<CanvasGroup>(true)) {
+                    UnityEngine.Object.DestroyImmediate(canvasGroup);
+                    removed++;
+                }
+                PrefabUtility.SaveAsPrefabAsset(root, prefabPath);
+            } finally {
+                PrefabUtility.UnloadPrefabContents(root);
+            }
+        }
+        AssetDatabase.SaveAssets();
+        Debug.Log("[AIUI Cleanup] removed CanvasGroup components: " + removed);
     }
 
     static void Finalize(FinalizeRequest request) {
@@ -316,7 +464,7 @@ public static class AIUIExportQueue {
     }
 
     static void GeneratePreview(Request request) {
-        GameObject root = new GameObject(request.rootName, typeof(RectTransform), typeof(CanvasGroup));
+        GameObject root = new GameObject(request.rootName, typeof(RectTransform));
         RectTransform rootRect = root.GetComponent<RectTransform>();
         rootRect.anchorMin = rootRect.anchorMax = rootRect.pivot = new Vector2(0.5f, 0.5f);
         rootRect.sizeDelta = new Vector2(request.width, request.height);
@@ -434,7 +582,7 @@ public static class AIUIExportQueue {
 
     static RectTransform CreateButton(RectTransform parent, Node node, string fontPath) {
         GameObject go = new GameObject(node.name, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image),
-            typeof(Button), typeof(CanvasGroup), typeof(GameButton));
+            typeof(Button), typeof(GameButton));
         RectTransform rect = go.GetComponent<RectTransform>();
         SetTopLeft(rect, parent, node.x, node.y, node.width, node.height);
         rect.pivot = new Vector2(0.5f, 0.5f);
