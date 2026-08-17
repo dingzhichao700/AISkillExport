@@ -16,6 +16,8 @@
 
 使用 K&R 风格：类、函数、条件和 `switch` 的左花括号与声明位于同一行。
 
+人工编写的 `if`、`else`、`for`、`foreach`、`while`、`do` 等控制语句必须使用花括号，执行体独立换行；即使执行体只有 `return`、`continue` 或 `break`，也不得压缩成单行。
+
 ```csharp
 public class ExamplePanel : BasePanel {
     public ExamplePanel() {
@@ -65,9 +67,10 @@ UIBinder 自动生成的成员区域继续由工程既有生成器维护；功�
 - 体量较大、职责独立或会被多个调用方使用的顶层类必须放入同名独立文件，不得堆放在主要 Panel、View、Control 或 Model 文件前后。
 - 仅服务于当前主类、体量很小且不会独立复用的辅助类型可以同文件保留；一旦其配置、状态或行为持续增长，应拆为独立文件。
 - 拆分或迁移 Unity 源文件时必须连同 `.meta` 一起移动以保持 GUID；整理过程不得顺带改变类型名称、访问级别、序列化关系或运行时行为。
-- 模块代码按职责组织：`view/` 只存放 Panel、View、Item 等视图类；`model/` 存放数据对象及数据管理类；`constant/` 存放静态常量类和静态工具类。
+- 模块代码按职责组织：`view/` 只存放 Panel、View、Item 等视图类；`model/` 存放业务数据管理类；`model/vo/` 统一存放各种 `{Semantic}VO.cs` 数据对象；`constant/` 存放静态常量类和静态工具类。
 - 作为模块对外入口且采用单例访问的 `{Module}Control` 或 `{Semantic}Control` 直接放在模块根目录，不再增加 `control/` 目录；普通内部控制类不因名称带 `Control` 自动提升为模块入口。
-- 模块需要集中管理数据时，数据管理类命名为 `{Module}Model`，一个模块原则上只设置一个模块级 Model；数据对象命名为 `{Semantic}VO`，其中 `VO` 表示 Value Object，不得用 `{Semantic}Model` 表示单条数据对象。
+- 模块仅在存在业务数据管理需要时建立与模块同名的 `{Module}Model`，不得为了满足目录形式机械创建 Model；数据管理职责过大时，可以按明确业务职责增加其他 Model。
+- 数据对象命名为 `{Semantic}VO`，其中 `VO` 表示 Value Object，不得用 `{Semantic}Model` 表示单条数据对象；模块内的 VO 文件统一放入 `model/vo/`。
 - 模块存在 `{Module}Model` 时，模块入口 `{Module}Control` 必须通过只读属性 `model` 暴露其实例，统一使用 `{Module}Control.ins.model` 访问模块数据。`Control` 负责业务流程，`Model` 负责数据集合、查询、初始化与存储边界。
 - `View` 负责显示与输入，可以通过 `{Module}Control.ins.model` 读取展示数据；数据修改、状态推进及其他业务动作应调用 `Control` 的业务方法，不得由 `View` 直接修改 `VO`。
 - 原型阶段用于代替正式配置系统的静态配置类放入 `constant/`，并在类注释中标明未来配置来源；不得把大型配置类附加在 Panel 或其他 View 文件中。

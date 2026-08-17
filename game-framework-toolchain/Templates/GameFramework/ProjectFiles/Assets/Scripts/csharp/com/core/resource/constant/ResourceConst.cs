@@ -23,7 +23,7 @@ public static class ResourceConst
     public const string PATH_ATLAS_TITLE = PATH_ATLAS + "title/title/";
     public const string PATH_ATLAS_COMMON = PATH_ATLAS + "default/common/";
 
-    /// <summary>Title baseline：设置选项表。</summary>
+    /// <summary>Luban 客户端生成且需要在 Opening 阶段预加载的全部 JSON 配置。</summary>
     public static readonly List<string> ALL_CONFIG_LIST = new List<string>
     {
         "cfgobj_settingoptionobj"

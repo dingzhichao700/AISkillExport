@@ -1,13 +1,13 @@
-﻿using cfg;
+using cfg;
 using cfg.resource;
 using System.Collections.Generic;
 
 public class SettingOptionCfgMgr {
 
     /// <summary>
-    /// 获取指定类型的道具表列表
+    /// 获取指定类型的设置配置列表
     /// </summary>
-    /// <param name="type">道具类型</param>
+    /// <param name="type">设置类型</param>
     /// <returns></returns>
     public static List<SettingOptionResource> GetCfgByType(SettingType type) {
         List<SettingOptionResource> cfgs = new List<SettingOptionResource>();

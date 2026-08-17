@@ -26,6 +26,8 @@ foreach ($path in @(
     'Assets\Scenes\GameEntrance.unity',
     'Assets\Scenes\UIEditor.unity',
     'Assets\Scripts\csharp\com\core\RookieEngine.cs',
+    'Assets\Scripts\csharp\com\game\config\CfgManager.cs',
+    'Assets\Scripts\csharp\com\game\opening\OpeningPanel.cs',
     'Assets\Editor\GameFrameworkExportPipeline.cs',
     'Assets\Editor\uiComponent\UIBinderInspector.cs',
     'Assets\AddressableAssetsData\AddressableAssetSettings.asset',
@@ -90,6 +92,27 @@ if (Test-Path -LiteralPath $rookieEnginePath) {
     $settingsRead = $rookieEngine.IndexOf('PersistentDataControl.ins.ReadUserSetting()', [StringComparison]::Ordinal)
     if ($timerInit -lt 0 -or $settingsRead -lt 0 -or $timerInit -gt $settingsRead) {
         $errors.Add('RookieEngine must initialize timer before ReadUserSetting; setting correction dispatches timer-dependent events.')
+    }
+}
+
+$cfgManagerPath = Join-Path $ProjectFiles 'Assets\Scripts\csharp\com\game\config\CfgManager.cs'
+if (Test-Path -LiteralPath $cfgManagerPath) {
+    $cfgManager = Get-Content -LiteralPath $cfgManagerPath -Raw -Encoding UTF8
+    if ($cfgManager -notmatch 'public static void Init\(\)' -or $cfgManager -notmatch 'ResourceManager\.GetJsonNode\(path\)') {
+        $errors.Add('CfgManager must initialize Luban Tables from JSON already preloaded by ResourceManager.')
+    }
+    if ($cfgManager -notmatch 'CfgManager 尚未初始化' -or $cfgManager -notmatch 'Luban 配置尚未通过 Addressables 预加载') {
+        $errors.Add('CfgManager must fail explicitly on early table access or missing preloaded JSON.')
+    }
+}
+
+$openingPanelPath = Join-Path $ProjectFiles 'Assets\Scripts\csharp\com\game\opening\OpeningPanel.cs'
+if (Test-Path -LiteralPath $openingPanelPath) {
+    $openingPanel = Get-Content -LiteralPath $openingPanelPath -Raw -Encoding UTF8
+    $configPreload = $openingPanel.IndexOf('foreach (string cfgName in ResourceConst.ALL_CONFIG_LIST)', [StringComparison]::Ordinal)
+    $configInit = $openingPanel.IndexOf('CfgManager.Init()', [StringComparison]::Ordinal)
+    if ($configPreload -lt 0 -or $configInit -lt 0 -or $configPreload -gt $configInit) {
+        $errors.Add('OpeningPanel must preload ALL_CONFIG_LIST before initializing CfgManager.')
     }
 }
 

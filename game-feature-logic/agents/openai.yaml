@@ -1,0 +1,7 @@
+interface:
+  display_name: "Game Feature Logic"
+  short_description: "实现 Unity 游戏玩法、业务配置、状态与存档逻辑"
+  default_prompt: "使用 $game-feature-logic 实现 Unity 游戏功能的业务规则、配置、状态与验证。"
+
+policy:
+  allow_implicit_invocation: true
