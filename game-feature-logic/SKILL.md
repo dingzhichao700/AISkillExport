@@ -43,6 +43,23 @@ existing architecture and reusable infrastructure.
 - Create a helper under `com/game/config/mgr/` only when a table or related table family has recurring secondary-query needs, such as retrieving a configuration list by type; do not create one manager per table mechanically. Keep these helpers limited to querying, filtering, indexing, or combining generated Luban mapping objects and returning Luban mapping objects. If logic converts configuration into business VOs, combines it with runtime state, or implements gameplay rules, keep it in the owning feature Model instead.
 - Treat generator, loader, registration, or framework defects as a handoff to `game-framework-toolchain`; do not silently redesign shared infrastructure.
 
+### Optimize repeated configuration edits
+
+Use a fast incremental path when the same workbook schema and formatting conventions have
+already been verified and the task only adds or changes data rows:
+
+1. Reconfirm file freshness, target ranges, identifiers, references, and the current data-row style; do not repeat broad repository discovery or full-workbook inspection without evidence that structure changed.
+2. Reuse the verified schema and style baseline. On the first edit, explicitly apply the established data-row font, alignment, borders, number formats, validation, and comments to new rows; do not rely on an unverified copy operation and then repair formatting in a second pass.
+3. Inspect the modified ranges, scan formula or reference errors, and render each affected sheet once after editing. Add another render only when the first verification exposes a concrete visual defect.
+4. Combine deterministic checks for row counts, unique IDs, foreign keys, enum aliases, resource-name existence, dimensions, and generated-data values into one validation run where practical.
+5. Invoke the project's approved generation script once after the workbooks pass validation. Do not run Luban repeatedly while still repairing spreadsheet content or formatting.
+6. Update configuration tests in the same pass when their expected counts or representative records change.
+7. Check Unity import or compilation once after files settle. If an open editor has not refreshed external changes, report the pending refresh immediately instead of waiting or polling repeatedly; never start a competing editor instance.
+
+Do not use this fast path for schema changes, unfamiliar workbooks, manually modified files
+whose style baseline is uncertain, or changes involving enums, comments, validations, merged
+regions, or other structures that require renewed inspection.
+
 ## Respect the presentation boundary
 
 - Provide stable read APIs, commands, results, and events to `aiui-to-ugui`.
