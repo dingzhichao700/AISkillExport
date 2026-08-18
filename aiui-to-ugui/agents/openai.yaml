@@ -1,7 +1,7 @@
 interface:
   display_name: "AIUI to Unity uGUI"
-  short_description: "将游戏 UI 分阶段转换为 uGUI Prefab 与审核后的代码绑定"
-  default_prompt: "使用 $aiui-to-ugui 将游戏 UI 需求分阶段转换为 Unity uGUI Prefab，并在我确认节点后执行 UIBinder 成员导出。"
+  short_description: "从 UI 设计到 Unity uGUI 交互表现层"
+  default_prompt: "使用 $aiui-to-ugui 从当前 UI 阶段继续，完成 Unity uGUI 视觉、绑定与交互表现。"
 
 policy:
-  allow_implicit_invocation: false
+  allow_implicit_invocation: true

@@ -5,7 +5,8 @@ This repository stores reusable Codex skills for Unity uGUI and the Game Framewo
 Current skills:
 
 - `aiui-to-ugui`
-- `ugui-feature-logic`
+- `game-art-asset-pipeline`
+- `game-feature-logic`
 - `game-framework-toolchain`
 
 Each skill folder contains:

@@ -1,6 +1,6 @@
 ---
 name: aiui-to-ugui
-description: Convert a game UI request into a reviewed Blueprint, visual mockup, isolated art assets, structured Figma design, Unity uGUI Prefab, project-conforming UIBinder initialization, and user-approved runtime member export. Use only when explicitly invoked for the staged AIUI-to-Unity workflow, including continuing or revising one of its stages.
+description: Build or continue a Unity uGUI presentation layer from a game UI request or existing approved UI artifacts, covering reviewed UI design, UI visual assets, Figma structure, Prefab, UIBinder export, input wiring, view state, and calls into business APIs. Use for UI production or presentation-only runtime integration. Hand non-UI game art asset generation and production processing to game-art-asset-pipeline; do not own gameplay rules, authoritative business state, business configuration, or persistence.
 ---
 
 # AIUI to Unity uGUI
@@ -8,59 +8,88 @@ description: Convert a game UI request into a reviewed Blueprint, visual mockup,
 Run the workflow as a sequence of explicit artifacts and approval gates. Keep the
 process reversible and do not invent project-specific rules.
 
+Non-UI game art such as characters, aircraft, enemies, equipment, projectiles,
+world objects, gameplay icons, effects, textures, and progression series belongs to
+`game-art-asset-pipeline`. This Skill owns visual assets only when they are part of a UI
+design or presentation-layer delivery.
+
 ## Start a run
 
-### First-use external image-provider enrollment (mandatory)
+### 外部图像模型登记（首次使用时强制执行）
 
-On the first use of this Skill in a workspace or conversation, stop before
-any image generation and ask the user whether an external image-model API can
-be provided. If the user agrees, request the provider name, endpoint/model
-information, and the required environment-variable name and value through the
-available secure environment configuration. Do not echo, persist, or place
-secret values in chat, manifests, source files, prompts, or generated assets.
+本 Skill 遇到视觉稿、独立位图或其他图像生成需求时，一律使用用户登记的
+外部图像模型。禁止使用 Codex/ChatGPT 内置图像生成能力，除非用户明确取消
+这一限制。
 
-Run a minimal connectivity and generation smoke test using that provider. The
-smoke test must report success or the concrete failure before the requested
-visual generation begins. If configuration or debugging fails, stop and notify
-the user; do not fall back to ChatGPT's built-in image generation.
+首次使用时，图像生成前只收集并登记以下信息：
 
-After the external provider has passed its first-use smoke test, record its
-provider identity (never its secret) as the workspace's selected image
-provider. All later image generation for this Skill must use that provider by
-default. Do not switch to ChatGPT's built-in image generation or another
-provider unless the user explicitly authorizes a new provider enrollment and
-the new provider passes the same smoke test.
+1. 提供方名称；
+2. 官方服务地址或官方接口文档；
+3. 模型名称；
+4. 保存 API Key 的环境变量名称。
 
-1. Read `references/pipeline.md`.
-2. Collect only the inputs required for the next requested stage.
-3. Read `references/blueprint-contract.md` before creating or changing a
+API Key 只保存在用户配置的安全环境变量中。环境变量只存 API Key，不承载
+服务地址、模型名称或其他公开连接配置。当前兼容约定为 `QWEN_ANI`；新提供方
+可使用清晰的提供方专属变量名，或使用通用名称 `AIUI_IMAGE_API_KEY`。
+
+只能在实际发送请求时使用 API Key。禁止在聊天、日志、manifest、源码、提示词
+或生成资源中打印、输出、复制、持久化或展示它的值。允许检查环境变量是否存在，
+并把提供方、服务地址、模型名称和环境变量名称作为非秘密配置记录到 run manifest。
+
+使用登记的提供方执行一次最小连通性与生成冒烟测试。正式生成前必须报告测试
+成功，或报告实际请求返回的具体失败。配置或测试失败时停止并通知用户，不得回退
+到 Codex/ChatGPT 内置图像生成能力。
+
+首次测试通过后，后续任务默认复用已登记的提供方和公开连接配置。只有用户明确
+授权更换提供方时，才重新登记并执行同样的测试。
+
+### 外部图像模型执行约定（强制）
+
+- QWEN 是当前登记的提供方时，先读取 `references/qwen-image-provider.md`，并且只能
+  使用 `scripts/invoke-qwen-image.ps1` 发起图像生成请求。禁止在任务中临时拼装请求体。
+- 当已批准的资产可作为画风、视角、主体或结构参考时，优先读取
+  `references/qwen-reference-image-provider.md`，并使用
+  `scripts/invoke-qwen-reference-image.ps1` 发起单张参考图生成。不要继续依赖纯文字提示词
+  猜测已批准的视觉语言。每次审核只设置 `n=1`，未经当前图片批准不得生成下一张。
+- 其他提供方没有固定调用器时，代理才可以依据已登记的官方协议构造请求；缺少调用器
+  本身不代表图像生成能力不可用。
+- 在尚未实际执行连通性请求或最小生成测试前，不得判断“无法生成图像”或
+  “图像能力不通”。
+- 只有凭据缺失、公开连接配置缺失、网络不可用、鉴权被拒绝、模型不可用或实际
+  请求失败，才可以阻塞图像生成；必须报告具体失败，不得把缺少内置脚本作为原因。
+
+1. Identify whether the request starts from UI design, an intermediate artifact,
+   Unity export, or an approved Prefab/UIBinder that only needs view integration.
+2. Read `references/pipeline.md` for design-through-export work. For view-only
+   integration, read `references/unity-view-integration.md` instead.
+3. Collect only the inputs required for the next requested stage.
+4. Read `references/blueprint-contract.md` before creating or changing a
    Blueprint.
-4. Read `references/artifact-contract.md` before generating files, editing
+5. Read `references/artifact-contract.md` before generating files, editing
    Figma, or writing into a Unity project.
-5. Read `references/figma-import.md` before creating or updating a structured
+6. Read `references/figma-import.md` before creating or updating a structured
    Figma deliverable, including when generating a local import plugin.
-6. Read `references/unity-code-binding.md` before generating binding code,
+7. Read `references/unity-code-binding.md` before generating binding code,
    exporting members, or attaching a generated view component to a Prefab.
-7. State the current stage, the inputs being used, and the next approval gate
+8. State the current stage, the inputs being used, and the next approval gate
    or verification checkpoint.
 
-### Image-provider preflight (mandatory)
+### 图像提供方预检（每次生成前强制执行）
 
-Before any visual mockup or raster asset generation:
+每次生成视觉稿或位图资源前：
 
-1. Check whether the `QWEN_ANI` environment variable is configured without
-   printing, copying, persisting, or exposing its value.
-2. If configured, select QWEN and record `imageProvider: QWEN` in the run
-   manifest before generating.
-3. If QWEN is configured but unavailable, fails, or cannot be invoked, stop the
-   stage and notify the user with the concrete failure. Do not silently switch
-   to another provider.
-4. If no enrolled external provider is configured, report that fact and stop
-   before generation. Ask the user to enroll an external provider; do not use
-   ChatGPT's built-in image generation by assumption.
-5. If the selected provider differs from the requested or configured provider,
-   invalidate the draft output, mark the run as blocked at the provider
-   checkpoint, and notify the user before continuing.
+1. 检查已登记的 API Key 环境变量是否存在，不输出、复制、持久化或展示其值。
+2. 核对已登记的提供方、服务地址、模型名称和请求协议；缺少公开连接配置时先补齐，
+   不得猜测。
+   QWEN 必须核对为 `input.prompt` 字符串协议，不得使用 `input.messages`。
+3. 在 run manifest 中记录提供方、模型、环境变量名称、凭据是否已配置及预检结果，
+   但绝不记录 API Key。
+4. 实际调用外部图像模型前显式告知用户，然后执行最小测试或本次正式请求。
+5. 若提供方不可用或请求失败，报告具体错误并停止，不得静默切换提供方。
+6. 若没有已登记且已配置的外部提供方，图像生成前停止并请用户完成登记；不得默认
+   使用 Codex/ChatGPT 内置图像生成能力。
+7. 若实际使用的提供方与登记或用户指定的提供方不一致，废弃本次草稿，把 run 标记
+   为阻塞，并在继续前通知用户。
 
 Accept partial runs. Resume from an existing artifact instead of recreating
 approved upstream work.
@@ -110,11 +139,24 @@ wait instead of exporting every visual node.
 If the user requests only one stage, stop after reporting its artifacts and
 validation result.
 
+## Complete the presentation layer
+
+After an approved Prefab, UIBinder, and member set exist, continue with
+`references/unity-view-integration.md` when the UI needs runtime behavior.
+
+- Wire buttons, tabs, keyboard input, view-local state, events, and display refresh.
+- Call business APIs and render their results; do not reproduce business rules in a Panel or View.
+- Treat gameplay state, eligibility, rewards, costs, persistence, and business
+  configuration as owned by `game-feature-logic`.
+- Permit partial runs that begin from an existing approved Prefab/UIBinder; do
+  not require rebuilding earlier visual stages.
+- Validate compilation and runtime presentation behavior before handoff.
+
 ## Use tools conservatively
 
-- Use QWEN as the mandatory default image provider when `QWEN_ANI` is
-  configured. Complete the image-provider preflight before every generation
-  stage, and record the selected provider in the run manifest.
+- 使用已经登记并通过冒烟测试的外部图像提供方。`QWEN_ANI` 存在时，只能在
+  QWEN 已登记为当前提供方且公开连接配置完整时将其用作 API Key。每个生成阶段前
+  完成提供方预检，并在 run manifest 中记录所选提供方，但不得记录密钥。
 - Do not silently switch image providers. Any unavailable provider, fallback,
   or provider mismatch is a user-visible stop condition; report it before
   generating or accepting artifacts.

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Game Art Asset Pipeline"
+  short_description: "Generate, review, process, and deliver game-ready art series"
+  default_prompt: "Use $game-art-asset-pipeline to create and standardize a reviewed series of game art assets."

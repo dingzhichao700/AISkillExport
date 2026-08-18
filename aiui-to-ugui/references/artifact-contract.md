@@ -34,12 +34,14 @@ For Figma stages, record `figmaTransport`, `figmaTransportLocked`,
 until the user explicitly authorizes a change.
 
 For any visual or raster generation, also record the provider preflight result:
-`imageProvider`, whether `QWEN_ANI` was configured, and any provider failure or
-fallback decision. A generated artifact from an unrecorded or mismatched
+`imageProvider`, `imageModel`, the API-key environment-variable name, whether
+that variable was configured, and any provider failure or fallback decision.
+Never record the API key. A generated artifact from an unrecorded or mismatched
 provider is non-authoritative until regenerated or explicitly re-approved.
 For first use, record the external-provider enrollment and smoke-test status
 without recording secrets. Subsequent runs must preserve the enrolled provider
-identity unless the user explicitly authorizes re-enrollment.
+identity and public connection configuration unless the user explicitly
+authorizes re-enrollment.
 
 ## Which handoff file to read
 

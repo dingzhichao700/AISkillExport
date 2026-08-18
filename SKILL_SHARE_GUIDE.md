@@ -9,7 +9,8 @@ updates immediately available to Codex.
 1. Keep one root folder, for example `E:\ChatGPTSkills`.
 2. Put each skill in its own subfolder:
    - `aiui-to-ugui`
-   - `ugui-feature-logic`
+   - `game-art-asset-pipeline`
+   - `game-feature-logic`
    - `game-framework-toolchain`
 3. Each skill folder must contain:
    - `SKILL.md`

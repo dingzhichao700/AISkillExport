@@ -12,7 +12,8 @@ param(
 
 $skillNames = @(
     "aiui-to-ugui",
-    "ugui-feature-logic",
+    "game-art-asset-pipeline",
+    "game-feature-logic",
     "game-framework-toolchain"
 )
 
