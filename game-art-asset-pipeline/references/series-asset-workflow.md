@@ -20,6 +20,12 @@ Generate one sheet showing the complete series. Prefer grayscale silhouettes or 
 detail when the primary approval question is shape progression. Color is allowed when
 color relationships are the main design question.
 
+When an approved series sheet already establishes the desired viewpoint, line quality,
+spacing, or progression language, prefer it as a style and composition reference while
+explicitly redesigning the new subject. If text-only generation repeatedly introduces
+forbidden infographic elements or an unsuitable style, stop blind retries and switch to
+that approved reference. Never use a rejected draft as the authoritative style reference.
+
 Prompt requirements:
 
 - show exactly the requested number of members;
