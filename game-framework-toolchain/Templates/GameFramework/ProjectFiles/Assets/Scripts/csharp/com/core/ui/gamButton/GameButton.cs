@@ -58,7 +58,7 @@ public class GameButton : BaseView, IPointerEnterHandler, IPointerExitHandler, I
         _targetScale = _normalScale;
 
         _defaultColor = _image.color;
-        _disabledColor = _defaultColor * disabledColorMultiplier;
+        _disabledColor = new Color(_defaultColor.r * disabledColorMultiplier, _defaultColor.g * disabledColorMultiplier, _defaultColor.b * disabledColorMultiplier, _defaultColor.a);
 
         if (_button != null) {
             _button.onClick.AddListener(OnButtonClickedInternal);

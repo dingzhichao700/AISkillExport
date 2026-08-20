@@ -28,6 +28,14 @@ persist gameplay data. Request those capabilities from `game-feature-logic`.
 - Keep business maxima separate from bitmap geometry. Clamp displayed ratios and restore declared geometry baselines on reopen or pool reuse.
 - Build dynamic graph connections from endpoint data and reusable state Sprites, not whole-route preview bitmaps.
 - Recompute dynamic geometry and state when topology, layout, or unlock state changes.
+- Treat image alignment as declared presentation data, not a visual guess. Rectangle
+  alignment is the default. For a resource family explicitly declared as pivot-aligned,
+  synchronize the uGUI `Image` RectTransform pivot from the loaded Sprite and keep the
+  view's semantic anchor position fixed while variants change. Do not compensate the
+  position after changing the pivot, because that cancels semantic-anchor alignment.
+- When interchangeable forms, levels, skins, equipment states, or other series may need
+  semantic-anchor alignment but no mode is declared, prompt the user to confirm it as
+  needed. Apply the decision to the entire replaceable resource family.
 
 ## Code structure
 
@@ -42,3 +50,13 @@ persist gameplay data. Request those capabilities from `game-feature-logic`.
 Verify compilation, Prefab references, event cleanup, reopen behavior, input,
 display refresh, and calls into business APIs. Report missing or provisional
 business interfaces instead of embedding temporary business rules in the View.
+
+Also validate that editor-only ScrollList preview objects cannot be mistaken for
+runtime pool objects. In particular, do not name retained preview objects with the
+runtime convention `{Template}(Clone)`.
+
+Prefer independent `Image` objects for established semantic icons such as currencies,
+ratings, or resource costs instead of relying on special font glyphs. Before UI handoff,
+check the actual displayed text against the selected TextMeshPro font assets; complete
+missing static glyph coverage or configure an appropriate fallback rather than accepting
+missing-glyph boxes.

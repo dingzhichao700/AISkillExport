@@ -13,7 +13,8 @@ artifacts and stop at every required approval gate.
 1. Read the target project's governing instructions.
 2. Record the asset family, semantic role, visual style, viewpoint, orientation,
    progression dimensions, count, naming pattern, production size, display size,
-   transparent-background requirement, anchor, destination, and current stage.
+   transparent-background requirement, alignment mode, semantic anchor, destination,
+   and current stage.
 3. Separate model-generated artifacts from deterministic post-processing.
 4. Create or update a run manifest without recording credentials.
 
@@ -65,6 +66,15 @@ Do not generate later stages before the current gate is explicitly approved.
   mockup frames, or decorations in generation prompts.
 - Preserve shared scale when relative size communicates progression. Use a common center
   axis and a declared anchor; do not independently fit every member to the canvas.
+- Treat alignment as an explicit asset contract. Default ordinary presentation assets
+  to rectangle alignment. Declare a replaceable series as pivot-aligned when its forms,
+  levels, skins, equipment states, or other variants must share a semantic attachment
+  point. Apply one alignment mode and one anchor meaning to the whole series.
+- When a series may benefit from pivot alignment but the requirement has not declared
+  it, prompt the user to confirm the asset identity as needed; do not infer a semantic
+  anchor independently for every image. Examples of anchor meaning may include a support
+  point, foot position, attachment point, or visual center, but the concrete meaning
+  belongs to the current product rather than this Skill.
 - Keep source sheets, transparent sheets, final assets, and review composites separate.
 - Use deterministic scripts for extraction, segmentation, resizing, naming, and checks.
 
@@ -74,6 +84,10 @@ Verify the requested count, naming, format, dimensions, alpha channel, transpare
 corners, complete silhouettes, absence of cross-member fragments, safe padding,
 consistent viewpoint and anchor, and the intended progression. Visually inspect a
 review composite before delivery.
+
+For pivot-aligned series, also verify that every delivered asset records the same
+alignment mode and semantic anchor meaning, while allowing the numeric pivot to differ
+as required by each silhouette.
 
 Do not place assets into Unity, register Addressables, create configuration, or run
 content builds unless the user requests that stage. Hand game-domain configuration and

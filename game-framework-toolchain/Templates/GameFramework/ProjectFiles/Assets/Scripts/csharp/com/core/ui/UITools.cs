@@ -11,7 +11,7 @@ class UITools {
     /// </summary>
     /// <param name="imgObj">图片组件</param>
     /// <param name="path">图片路径</param>
-    public static void SetImage(Image imgObj, string path) {
+    public static void SetImage(Image imgObj, string path, bool syncSpritePivot = false) {
         /*if (path.Contains(ResourceConst.PATH_ATLAS)) {
             //图集
             string nameWithoutRoot = path.Replace(ResourceConst.PATH_ATLAS, "");
@@ -50,7 +50,19 @@ class UITools {
             Debug.LogError("图片路径异常，请检查：" + path);
         }*/
         LoadImage(path, () => {
-            imgObj.sprite = GetSprite(path);
+            if (imgObj == null) {
+                return;
+            }
+            Sprite sprite = GetSprite(path);
+            if (sprite == null) {
+                return;
+            }
+            imgObj.sprite = sprite;
+            if (syncSpritePivot) {
+                RectTransform rectTransform = imgObj.rectTransform;
+                Vector2 spritePivot = new Vector2(sprite.pivot.x / sprite.rect.width, sprite.pivot.y / sprite.rect.height);
+                rectTransform.pivot = spritePivot;
+            }
         });
     }
 

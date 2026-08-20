@@ -17,6 +17,9 @@ public class FrameAnimationView : MonoBehaviour {
     /**当前正在加载或播放的帧动画路径*/
     private string _path;
     public string path => _path;
+
+    /**用于丢弃对象销毁、回收或重新播放后返回的旧加载结果*/
+    private int loadVersion;
     /**是否需要循环播放*/
     private bool loop;
     /**使用的计时器类型*/
@@ -93,6 +96,7 @@ public class FrameAnimationView : MonoBehaviour {
     /// <param name="timerType">使用的计时器类型</param>
     public async void Play(string path, bool loop = true, Handler handler = null, bool playOverDestory = true, float scale = 1f, int dir = 1, float playSpeed = 1f, TimerType timerType = TimerType.COMMON) {
         this._path = path;
+        int requestVersion = ++loadVersion;
         this.loop = loop;
         if (loop) {
             //循环
@@ -121,12 +125,15 @@ public class FrameAnimationView : MonoBehaviour {
         UpdateScaleAndDirection();
 
         //加载资源
-        await LoadAndPlay(path);
+        await LoadAndPlay(path, requestVersion);
     }
 
     /**加载并播放（如果未加载完成则会等待）*/
-    private async Task LoadAndPlay(string path) {
+    private async Task LoadAndPlay(string path, int requestVersion) {
         await ResourceLoader.LoadListAsync(new List<ResLoadInfo> { new ResLoadInfo(path, ResType.FrameAnim) }, () => {
+            if (this == null || requestVersion != loadVersion || _path != path) {
+                return;
+            }
             OnLoadComplete(FrameAnimationManager.GetRes(path));
         });
     }
@@ -134,12 +141,17 @@ public class FrameAnimationView : MonoBehaviour {
     /**停在第一帧*/
     public async void StopAtFirstFrame(string path) {
         Pause();
+        this._path = path;
+        int requestVersion = ++loadVersion;
         //加载资源
-        await LoadAndPlay(path);
+        await LoadAndPlay(path, requestVersion);
     }
 
     /**加载帧动画完成*/
     public void OnLoadComplete(FrameAnimationRes data) {
+        if (this == null || data == null) {
+            return;
+        }
         float loadCostTime = timer.curTime - playBeginTime;
         if (loadCostTime > 300) {
             Debug.LogWarning("帧动画加载完成耗时：" + loadCostTime + "ms，资源：" + _path);
@@ -260,6 +272,7 @@ public class FrameAnimationView : MonoBehaviour {
 
     /**清理*/
     public void Clear() {
+        loadVersion++;
         _scale = 0;
         _dir = 0;
         isPause = default;
