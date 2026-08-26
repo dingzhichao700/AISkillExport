@@ -5,6 +5,14 @@ using UnityEngine;
 
 public class Timer {
 
+    private sealed class TimeUpdateListener {
+
+        public object caller;
+
+        public Action<float> callback;
+
+    }
+
     /// <summary>
     /// 时间倍率
     /// </summary>
@@ -34,6 +42,13 @@ public class Timer {
     /// </summary>
     private Dictionary<object, List<TimeHandler>> handlerMap = new Dictionary<object, List<TimeHandler>>();
 
+    /// <summary>
+    /// 接收当前时间轴更新的监听列表，参数为经过时间倍率处理后的秒数。
+    /// </summary>
+    private readonly List<TimeUpdateListener> updateListeners = new List<TimeUpdateListener>();
+
+    private bool isDispatchingUpdate;
+
     public Timer() {
         scale = 1;
         curTime = 0;
@@ -44,7 +59,9 @@ public class Timer {
     /// </summary>
     /// <param name="passTime">经过的物理毫秒时间</param>
     public void SyncTime(float passTime) {
-        curTime += passTime * scale;
+        float scaledPassTime = passTime * scale;
+        curTime += scaledPassTime;
+        DispatchTimeUpdate(scaledPassTime / 1000f);
         //Debug.Log("curTime:" + curTime);
         for (int i = 0; i < handlerMap.Keys.Count; i++) {
             object obj = handlerMap.Keys.ElementAt(i);
@@ -88,6 +105,65 @@ public class Timer {
             callLaterList[i].Destory();
             callLaterList.RemoveAt(i);
         }
+    }
+
+    /// <summary>
+    /// 监听当前时间轴的逐帧更新，回调参数为经过 scale 处理后的秒数。
+    /// </summary>
+    public void AddUpdateListener(object caller, Action<float> callback) {
+        if (caller == null || callback == null) {
+            return;
+        }
+        for (int i = 0; i < updateListeners.Count; i++) {
+            TimeUpdateListener listener = updateListeners[i];
+            if (listener.caller == caller && listener.callback == callback) {
+                return;
+            }
+        }
+        updateListeners.Add(new TimeUpdateListener {
+            caller = caller,
+            callback = callback,
+        });
+    }
+
+    /// <summary>
+    /// 移除当前时间轴的逐帧更新监听。
+    /// </summary>
+    public void RemoveUpdateListener(object caller, Action<float> callback) {
+        for (int i = updateListeners.Count - 1; i >= 0; i--) {
+            TimeUpdateListener listener = updateListeners[i];
+            if (listener.caller != caller || listener.callback != callback) {
+                continue;
+            }
+            if (isDispatchingUpdate) {
+                listener.callback = null;
+            } else {
+                updateListeners.RemoveAt(i);
+            }
+        }
+    }
+
+    /**向当前时间轴的监听者广播本帧时间增量*/
+    private void DispatchTimeUpdate(float deltaTime) {
+        isDispatchingUpdate = true;
+        for (int i = 0; i < updateListeners.Count; i++) {
+            TimeUpdateListener listener = updateListeners[i];
+            if (listener.callback == null || !IsCallerAlive(listener.caller)) {
+                listener.callback = null;
+                continue;
+            }
+            listener.callback(deltaTime);
+        }
+        isDispatchingUpdate = false;
+        updateListeners.RemoveAll(listener => listener.callback == null);
+    }
+
+    /**判断监听者是否仍可接收 Timer 回调*/
+    private bool IsCallerAlive(object caller) {
+        if (caller is UnityEngine.Object callerObject && callerObject == null) {
+            return false;
+        }
+        return true;
     }
 
     /**增加一个需要清除的调用者*/
