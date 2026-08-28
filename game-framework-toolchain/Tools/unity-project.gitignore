@@ -45,3 +45,9 @@ Desktop.ini
 *.bak
 *.swp
 *~
+
+# Task intermediates and generated review artifacts
+**/art-generation/
+**/work/
+**/outputs/
+**/*.inspect.ndjson
