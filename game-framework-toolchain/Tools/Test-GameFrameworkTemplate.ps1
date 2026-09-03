@@ -7,6 +7,7 @@ if ([string]::IsNullOrWhiteSpace($TemplateRoot)) {
 }
 $TemplateRoot = [IO.Path]::GetFullPath($TemplateRoot)
 $ProjectFiles = Join-Path $TemplateRoot 'ProjectFiles'
+$RepoRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $errors = [Collections.Generic.List[string]]::new()
 
 function Require-Path([string]$RelativePath) {
@@ -156,6 +157,25 @@ if (Test-Path -LiteralPath $generator) {
     $generatorText = Get-Content -LiteralPath $generator -Raw -Encoding UTF8
     if ($generatorText -notmatch 'Optimize-GeneratedLibrary' -or $generatorText -notmatch "item\.Name -eq 'com\.unity\.addressables'") {
         $errors.Add('Generator must prune regenerable Library caches while retaining built Addressables output.')
+    }
+    if ($generatorText -notmatch 'Install-ProjectTexturePacker') {
+        $errors.Add('Generator must deploy the repository TexturePacker into each generated project.')
+    }
+}
+
+$texturePackerExe = Join-Path $RepoRoot 'ThirdParty\TexturePacker\4.9.0\win-x64\bin\TexturePacker.exe'
+if (-not (Test-Path -LiteralPath $texturePackerExe -PathType Leaf)) {
+    $errors.Add('Repository TexturePacker 4.9.0 executable is missing.')
+}
+
+$texturePackerTool = Join-Path $ProjectFiles 'Assets\Editor\TexturePackerTool.cs'
+if (Test-Path -LiteralPath $texturePackerTool -PathType Leaf) {
+    $texturePackerToolText = Get-Content -LiteralPath $texturePackerTool -Raw -Encoding UTF8
+    if ($texturePackerToolText -notmatch '\.\./Tools/TexturePacker/win-x64/bin/TexturePacker\.exe') {
+        $errors.Add('TexturePackerTool must resolve the project-local executable first.')
+    }
+    if ($texturePackerToolText -match '[A-Za-z]:[/\\].*TexturePack') {
+        $errors.Add('TexturePackerTool must not contain a machine-specific absolute executable path.')
     }
 }
 

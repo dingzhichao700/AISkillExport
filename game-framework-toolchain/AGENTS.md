@@ -24,6 +24,7 @@ game-framework-toolchain/
 ├── AGENTS.md
 ├── agents/
 ├── docs/
+├── ThirdParty/TexturePacker/{version}/{platform}/
 ├── Tools/
 └── Templates/GameFramework/
     └── ProjectFiles/          完整但不含生成缓存的 Unity 工程源文件
@@ -81,6 +82,7 @@ powershell -ExecutionPolicy Bypass -File Tools/Generate-GameFrameworkProject.ps1
 流程：模板复制到系统临时 staging → 写入工程实例信息与文档 → Unity 导入编译 → 初始化并构建 Addressables → 验证 → 清理可再生 Library 缓存 → 移至最终目录。
 
 - 默认拒绝覆盖；只有用户明确授权时使用 `-Force`。
+- 导出器从仓库 `ThirdParty/TexturePacker` 部署已锁定版本到 `Project/Tools/TexturePacker/{platform}`；样例工程不得依赖个人工具目录或 Skill 仓库绝对路径。
 - Addressables 不允许跳过；每次导出都从当前模板现场构建。
 - 最终交付只保留 `Library/com.unity.addressables`；其他 Library 内容由接收方首次打开时重新生成。
 - Unity 未显式指定时，按模板版本在常见安装目录自动查找。

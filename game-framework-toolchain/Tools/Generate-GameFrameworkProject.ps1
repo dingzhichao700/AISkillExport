@@ -35,6 +35,7 @@ $StageContainer = Join-Path ([IO.Path]::GetTempPath()) 'game-framework-toolchain
 $StageRoot = Join-Path $StageContainer ([guid]::NewGuid().ToString('N'))
 $StageProjectRoot = Join-Path $StageRoot $ProjectName
 $StageProject = Join-Path $StageProjectRoot 'Project'
+$TexturePackerSource = Join-Path $RepoRoot 'ThirdParty\TexturePacker\4.9.0\win-x64'
 
 function Write-Step([string]$Message) {
     Write-Host "[generate] $Message" -ForegroundColor Cyan
@@ -195,6 +196,17 @@ Addressables are prepared during export. If runtime loading fails, run **Tools -
     Set-Content -LiteralPath (Join-Path $Root 'README.md') -Value $readme -Encoding UTF8
 }
 
+function Install-ProjectTexturePacker([string]$ProjectPath) {
+    $sourceExe = Join-Path $TexturePackerSource 'bin\TexturePacker.exe'
+    if (-not (Test-Path -LiteralPath $sourceExe -PathType Leaf)) {
+        throw "TexturePacker tool source is incomplete: $sourceExe"
+    }
+
+    $destination = Join-Path $ProjectPath 'Tools\TexturePacker\win-x64'
+    Write-Step "Install TexturePacker 4.9.0: $destination"
+    Copy-Tree $TexturePackerSource $destination
+}
+
 function Assert-ExportComplete([string]$ProjectPath) {
     foreach ($relative in @(
         'Assets\Scenes\GameEntrance.unity',
@@ -273,6 +285,7 @@ try {
     Write-Step "Copy self-contained template: $ProjectFiles"
     Ensure-Directory $StageProject
     Copy-Tree $ProjectFiles $StageProject
+    Install-ProjectTexturePacker -ProjectPath $StageProject
     Update-GeneratedProject -Root $StageProjectRoot -ProjectPath $StageProject
 
     $script:UnityEditorPath = Resolve-UnityEditor -ExplicitPath $UnityEditor
