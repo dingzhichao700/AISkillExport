@@ -66,7 +66,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 6317113111177828977, guid: 648a65727e384bc4ea92de659b650648, type: 3}
+  m_Sprite: {fileID: 1277705404, guid: 240a1d1404072a843883f02017283a0c, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -244,7 +244,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: -397378208186364062, guid: 648a65727e384bc4ea92de659b650648, type: 3}
+  m_Sprite: {fileID: 1098125229, guid: 240a1d1404072a843883f02017283a0c, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -460,7 +460,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: -7449719636086833477, guid: 648a65727e384bc4ea92de659b650648, type: 3}
+  m_Sprite: {fileID: -407120302, guid: 240a1d1404072a843883f02017283a0c, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -1154,7 +1154,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 625d42892ede9214cb55b6772a116166, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  csharpAssetPath: Assets/Scripts/csharp/com/game/setting/view/SettingLanguageView.cs
+  scriptTypeName: SettingLanguageView, Login
+  csharpAssetPath: Assets/Scripts/csharp/login/setting/view/SettingLanguageView.cs
   csharpAsset: 
   uiList:
   - id: 1
@@ -1228,7 +1229,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: -8484721133229826199, guid: 648a65727e384bc4ea92de659b650648, type: 3}
+  m_Sprite: {fileID: 239510696, guid: 240a1d1404072a843883f02017283a0c, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -1323,7 +1324,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 625d42892ede9214cb55b6772a116166, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  csharpAssetPath: Assets/Scripts/csharp/com/game/setting/view/SettingTabItem.cs
+  scriptTypeName: SettingTabItem, Login
+  csharpAssetPath: Assets/Scripts/csharp/login/setting/view/SettingTabItem.cs
   csharpAsset: 
   uiList:
   - id: 1
@@ -1416,7 +1418,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: -8659933545906559189, guid: 648a65727e384bc4ea92de659b650648, type: 3}
+  m_Sprite: {fileID: -1629861022, guid: 240a1d1404072a843883f02017283a0c, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -1614,7 +1616,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 625d42892ede9214cb55b6772a116166, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  csharpAssetPath: Assets/Scripts/csharp/com/game/setting/view/SettingControlView.cs
+  scriptTypeName: SettingControlView, Login
+  csharpAssetPath: Assets/Scripts/csharp/login/setting/view/SettingControlView.cs
   csharpAsset: 
   uiList:
   - id: 1
@@ -1746,7 +1749,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: -8659933545906559189, guid: 648a65727e384bc4ea92de659b650648, type: 3}
+  m_Sprite: {fileID: -1629861022, guid: 240a1d1404072a843883f02017283a0c, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -1854,7 +1857,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 3303756081134148751, guid: 648a65727e384bc4ea92de659b650648, type: 3}
+  m_Sprite: {fileID: 57306093, guid: 240a1d1404072a843883f02017283a0c, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -1946,7 +1949,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 625d42892ede9214cb55b6772a116166, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  csharpAssetPath: Assets/Scripts/csharp/com/game/setting/view/SettingPanel.cs
+  scriptTypeName: SettingPanel, Login
+  csharpAssetPath: Assets/Scripts/csharp/login/setting/view/SettingPanel.cs
   csharpAsset: 
   uiList:
   - id: 1
@@ -2041,7 +2045,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 625d42892ede9214cb55b6772a116166, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  csharpAssetPath: Assets/Scripts/csharp/com/game/common/view/CommonPanelView.cs
+  scriptTypeName: CommonPanelView, Login
+  csharpAssetPath: Assets/Scripts/csharp/login/common/view/CommonPanelView.cs
   csharpAsset: 
   uiList:
   - id: 1
@@ -2050,12 +2055,6 @@ MonoBehaviour:
     isCustomClass: 0
     customClassName: 
     go: {fileID: 7336964647540370821}
-  - id: 2
-    uiName: boxShoulder
-    uiTypeName: RectTransform
-    isCustomClass: 0
-    customClassName: 
-    go: {fileID: 0}
   - id: 3
     uiName: txtTitle
     uiTypeName: TextMeshProUGUI
@@ -2214,7 +2213,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 3303756081134148751, guid: 648a65727e384bc4ea92de659b650648, type: 3}
+  m_Sprite: {fileID: 57306093, guid: 240a1d1404072a843883f02017283a0c, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -2431,7 +2430,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 6555947564282861026, guid: 648a65727e384bc4ea92de659b650648, type: 3}
+  m_Sprite: {fileID: 259211189, guid: 240a1d1404072a843883f02017283a0c, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -2538,7 +2537,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 625d42892ede9214cb55b6772a116166, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  csharpAssetPath: Assets/Scripts/csharp/com/game/setting/view/SettingGraphicView.cs
+  scriptTypeName: SettingGraphicView, Login
+  csharpAssetPath: Assets/Scripts/csharp/login/setting/view/SettingGraphicView.cs
   csharpAsset: 
   uiList:
   - id: 1
@@ -2613,7 +2613,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 6317113111177828977, guid: 648a65727e384bc4ea92de659b650648, type: 3}
+  m_Sprite: {fileID: 1277705404, guid: 240a1d1404072a843883f02017283a0c, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -2702,7 +2702,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: -218882608491936342, guid: 648a65727e384bc4ea92de659b650648, type: 3}
+  m_Sprite: {fileID: 1983237127, guid: 240a1d1404072a843883f02017283a0c, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -2811,7 +2811,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 3303756081134148751, guid: 648a65727e384bc4ea92de659b650648, type: 3}
+  m_Sprite: {fileID: 57306093, guid: 240a1d1404072a843883f02017283a0c, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -3048,7 +3048,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 3303756081134148751, guid: 648a65727e384bc4ea92de659b650648, type: 3}
+  m_Sprite: {fileID: 57306093, guid: 240a1d1404072a843883f02017283a0c, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -3154,7 +3154,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 6555947564282861026, guid: 648a65727e384bc4ea92de659b650648, type: 3}
+  m_Sprite: {fileID: 259211189, guid: 240a1d1404072a843883f02017283a0c, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -3262,7 +3262,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 3303756081134148751, guid: 648a65727e384bc4ea92de659b650648, type: 3}
+  m_Sprite: {fileID: 57306093, guid: 240a1d1404072a843883f02017283a0c, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -3558,7 +3558,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 625d42892ede9214cb55b6772a116166, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  csharpAssetPath: Assets/Scripts/csharp/com/game/setting/view/SettingAudioView.cs
+  scriptTypeName: SettingAudioView, Login
+  csharpAssetPath: Assets/Scripts/csharp/login/setting/view/SettingAudioView.cs
   csharpAsset: 
   uiList:
   - id: 1
@@ -3582,7 +3583,7 @@ PrefabInstance:
     - target: {fileID: 4639219735548043168, guid: e2f064082b7ec214cb7d4a2dbd14806c, type: 3}
       propertyPath: m_Sprite
       value: 
-      objectReference: {fileID: -8274899550676926001, guid: 648a65727e384bc4ea92de659b650648, type: 3}
+      objectReference: {fileID: -69427439, guid: 240a1d1404072a843883f02017283a0c, type: 3}
     - target: {fileID: 4639219735548043169, guid: e2f064082b7ec214cb7d4a2dbd14806c, type: 3}
       propertyPath: text
       value: "\u5173\u95ED"

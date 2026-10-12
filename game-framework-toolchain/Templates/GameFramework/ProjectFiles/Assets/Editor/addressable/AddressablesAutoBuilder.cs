@@ -88,11 +88,12 @@ public static class AddressablesAutoBuilder
             return;
         }
 
+        AddressablesPrefabDependencyChecker.ValidateOrThrow();
+
         AddressableAssetSettings.BuildPlayerContent(out AddressablesPlayerBuildResult result);
         if (!string.IsNullOrEmpty(result.Error))
         {
-            Debug.LogError($"Addressables BuildPlayerContent failed: {result.Error}");
-            return;
+            throw new System.InvalidOperationException($"Addressables BuildPlayerContent failed: {result.Error}");
         }
 
         Debug.Log($"Addressables player content built. Duration={result.Duration}s Output={result.OutputPath}");
@@ -107,8 +108,8 @@ public static class AddressablesAutoBuilder
             return;
         }
 
-        var targetGroup = GetGroup(settings, "title");
-        ConfigureGroup(targetGroup, "title");
+        var targetGroup = GetGroup(settings, "configData");
+        ConfigureGroup(targetGroup, "configData");
         AddAssetsRecursively(settings, targetGroup, CONFIG_BIN_ROOT, null);
     }
 
@@ -162,8 +163,15 @@ public static class AddressablesAutoBuilder
                 continue;
             }
 
-            var entry = settings.CreateOrMoveEntry(guid, group);
+            var entry = settings.FindAssetEntry(guid);
+            if (entry == null || (assetPath.StartsWith(CONFIG_BIN_ROOT + "/") && entry.parentGroup.Name == "title")) {
+                entry = settings.CreateOrMoveEntry(guid, group);
+            }
             entry.address = assetPath;
+            if (entry.parentGroup == settings.DefaultGroup) {
+                settings.AddLabel("main-content");
+                entry.SetLabel("main-content", true);
+            }
 
             if (!string.IsNullOrEmpty(label))
             {
@@ -196,7 +204,10 @@ public static class AddressablesAutoBuilder
     private static void ConfigureGroup(AddressableAssetGroup group, string logicalGroupName)
     {
         var schema = group.GetSchema<BundledAssetGroupSchema>();
-        schema.BundleMode = AddressAblesConst.PACK_TOGETHER_GROUPS.Contains(logicalGroupName)
+        // 配置表独立打包，单表更新不会带动其他配置表重新下载。
+        schema.BundleMode = logicalGroupName == "configData"
+            ? BundledAssetGroupSchema.BundlePackingMode.PackSeparately
+            : AddressAblesConst.PACK_TOGETHER_GROUPS.Contains(logicalGroupName)
             ? BundledAssetGroupSchema.BundlePackingMode.PackTogether
             : BundledAssetGroupSchema.BundlePackingMode.PackTogetherByLabel;
         schema.UseAssetBundleCache = true;

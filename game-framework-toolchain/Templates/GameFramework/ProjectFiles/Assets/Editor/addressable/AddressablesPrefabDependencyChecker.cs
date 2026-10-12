@@ -1,116 +1,152 @@
-﻿using UnityEditor;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using UnityEditor;
 using UnityEditor.AddressableAssets;
+using UnityEditor.AddressableAssets.Settings;
+using UnityEditor.AddressableAssets.Settings.GroupSchemas;
 using UnityEngine;
 
-/// <summary>
-/// 预制违规跨Group或Label检测脚本
-/// </summary>
-public static class AddressablesPrefabDependencyChecker {
-
-    private const string PREFAB_ROOT = "Assets/Prefab";
-
+/// <summary>检查阶段资源的递归依赖及同包资源带来的间接依赖。</summary>
+public static class AddressablesPrefabDependencyChecker
+{
     [MenuItem("Tools/Addressables/Check Prefab Dependencies")]
-    public static void CheckPrefabDependencies() {
+    public static void CheckPrefabDependencies()
+    {
+        ValidateOrThrow();
+    }
 
+    public static void ValidateOrThrow()
+    {
         var settings = AddressableAssetSettingsDefaultObject.Settings;
-        if (settings == null) {
-            Debug.LogError("AddressableAssetSettings not found.");
-            return;
+        if (settings == null)
+        {
+            throw new InvalidOperationException("AddressableAssetSettings not found.");
         }
 
-        var prefabGuids = AssetDatabase.FindAssets("t:Prefab", new[] { PREFAB_ROOT });
-
-        int errorCount = 0;
-
-        foreach (var prefabGuid in prefabGuids) {
-            string prefabPath = AssetDatabase.GUIDToAssetPath(prefabGuid);
-
-            if (!TryGetLogicalGroupAndLabel(prefabPath, out var prefabGroup, out var prefabLabel))
-                continue;
-
-            var dependencies = AssetDatabase.GetDependencies(prefabPath, true);
-
-            foreach (var depPath in dependencies) {
-                if (depPath == prefabPath || depPath.EndsWith(".cs"))
-                    continue;
-
-                var entry = settings.FindAssetEntry(AssetDatabase.AssetPathToGUID(depPath));
-
-                if (entry == null)
-                    continue; // 非 Addressables 资源不检测
-
-                if (!TryGetLogicalGroupAndLabel(depPath, out var depGroup, out var depLabel))
-                    continue;
-
-                if (IsViolation(prefabGroup, prefabLabel, depGroup, depLabel)) {
-                    errorCount++;
-
-                    Debug.LogError(
-                        $"❌ Addressables Dependency Violation\n" +
-                        $"Prefab: {prefabPath} [{prefabGroup}/{prefabLabel}]\n" +
-                        $"Depends On: {depPath} [{depGroup}/{depLabel}]",
-                        AssetDatabase.LoadAssetAtPath<Object>(prefabPath)
-                    );
+        var roots = new HashSet<string>(AssetDatabase.FindAssets("t:Prefab", new[] { "Assets/Prefab" })
+            .Select(AssetDatabase.GUIDToAssetPath));
+        foreach (var group in settings.groups)
+        {
+            if (group != null && (group.Name == "opening" || group.Name == "title"))
+            {
+                foreach (var entry in group.entries)
+                {
+                    roots.Add(entry.AssetPath);
                 }
             }
         }
 
-        Debug.Log($"🔍 Prefab dependency check finished. Errors: {errorCount}");
-    }
+        int errors = 0;
+        foreach (string root in roots.OrderBy(path => path))
+        {
+            string sourceGroup = ResolveGroup(settings, root);
+            if (string.IsNullOrEmpty(sourceGroup))
+            {
+                continue;
+            }
 
-    #region Rules
+            var pending = new Queue<(string path, string chain)>();
+            var visited = new HashSet<string>();
+            pending.Enqueue((root, root));
+            while (pending.Count > 0)
+            {
+                var item = pending.Dequeue();
+                if (!visited.Add(item.path))
+                {
+                    continue;
+                }
 
-    private static bool IsViolation( string prefabGroup, string prefabLabel,string depGroup,string depLabel) {
-        // default 可以被任何人依赖
-        if (depGroup == "default")
-            return false;
+                string targetGroup = ResolveGroup(settings, item.path);
+                if (IsViolation(sourceGroup, targetGroup, root, item.path))
+                {
+                    errors++;
+                    Debug.LogError($"Addressables 阶段依赖违规 [{sourceGroup} -> {targetGroup}]\n{item.chain}");
+                    continue;
+                }
 
-        // Group 不同 → 违规
-        if (prefabGroup != depGroup)
-            return true;
+                foreach (string dependency in AssetDatabase.GetDependencies(item.path, false))
+                {
+                    if (dependency != item.path && !dependency.EndsWith(".cs", StringComparison.OrdinalIgnoreCase))
+                    {
+                        pending.Enqueue((dependency, item.chain + "\n  引用 -> " + dependency));
+                    }
+                }
 
-        // 同 Group 但 Label 不同（且 Prefab 有 Label）→ 违规
-        if (!string.IsNullOrEmpty(prefabLabel)
-            && !string.IsNullOrEmpty(depLabel)
-            && prefabLabel != depLabel)
-            return true;
-
-        return false;
-    }
-
-    #endregion
-
-    #region Group / Label Resolve
-
-    private static bool TryGetLogicalGroupAndLabel(string assetPath,out string group,out string label) {
-        group = null;
-        label = null;
-
-        // Prefab & Art 统一按路径规则解析
-        // Assets/Prefab/scene/scene1/xxx.prefab
-        // Assets/Art/atlas/scene/scene1/xxx.asset
-
-        var parts = assetPath.Split('/');
-
-        for (int i = 0; i < parts.Length; i++) {
-            if (parts[i] is "opening" or "title" or "default"
-                or "cutScene" or "scene") {
-                group = parts[i];
-
-                // Pack Together Group 没有 Label
-                if (group is "opening" or "title" or "default")
-                    return true;
-
-                // Label = 下一级目录名
-                if (i + 1 < parts.Length)
-                    label = parts[i + 1];
-
-                return true;
+                // 加载一个条目可能同时拉取同 Bundle 内其他条目的依赖。
+                var entry = settings.FindAssetEntry(AssetDatabase.AssetPathToGUID(item.path), true);
+                var schema = entry?.parentGroup.GetSchema<BundledAssetGroupSchema>();
+                if (schema == null || schema.BundleMode == BundledAssetGroupSchema.BundlePackingMode.PackSeparately)
+                {
+                    continue;
+                }
+                foreach (var sibling in entry.parentGroup.entries)
+                {
+                    if (schema.BundleMode == BundledAssetGroupSchema.BundlePackingMode.PackTogetherByLabel
+                        && !entry.labels.SetEquals(sibling.labels))
+                    {
+                        continue;
+                    }
+                    pending.Enqueue((sibling.AssetPath, item.chain + "\n  同 Bundle -> " + sibling.AssetPath));
+                }
             }
         }
-
-        return false;
+        if (errors > 0)
+        {
+            throw new InvalidOperationException($"Addressables 阶段依赖检查失败：{errors} 条违规，已阻止构建。见上述引用链。");
+        }
+        Debug.Log($"Addressables 静态阶段依赖检查通过：{roots.Count} 个入口。动态地址及最终 Bundle 依赖仍需构建报告和运行验证。");
     }
 
-    #endregion
+    private static bool IsViolation(string source, string target, string sourcePath, string targetPath)
+    {
+        if (string.IsNullOrEmpty(target) || target == "fonts")
+        {
+            return false;
+        }
+        if (source == "opening" || source == "title")
+        {
+            // title 的预加载由流程显式发起，不能被 opening 的资源引用提前带入。
+            return target != source;
+        }
+        if (source == target)
+        {
+            if (source == "scene" || source == "cutScene")
+            {
+                string sourceLabel = GetPathLabel(sourcePath, source);
+                string targetLabel = GetPathLabel(targetPath, target);
+                return sourceLabel != null && targetLabel != null && sourceLabel != targetLabel;
+            }
+            return false;
+        }
+        // 正式内容可复用此前已可用的登录资源和公共配置；场景可依赖 default。
+        return target != "title" && target != "configData" && target != "default";
+    }
+
+    private static string ResolveGroup(AddressableAssetSettings settings, string path)
+    {
+        var entry = settings.FindAssetEntry(AssetDatabase.AssetPathToGUID(path), true);
+        if (entry != null)
+        {
+            return entry.parentGroup == settings.DefaultGroup ? "default" : entry.parentGroup.Name;
+        }
+        // 未显式登记的隐式资源也不能绕过阶段检查。
+        if (path.StartsWith("Assets/ConfigBin/", StringComparison.Ordinal))
+        {
+            return "configData";
+        }
+        if (path.StartsWith("Assets/Art/font/", StringComparison.Ordinal))
+        {
+            return "fonts";
+        }
+        return path.Split('/').FirstOrDefault(part => part == "opening" || part == "title"
+            || part == "default" || part == "scene" || part == "cutScene");
+    }
+
+    private static string GetPathLabel(string path, string group)
+    {
+        var parts = path.Split('/');
+        int index = Array.IndexOf(parts, group);
+        return index >= 0 && index + 2 < parts.Length ? parts[index + 1] : null;
+    }
 }

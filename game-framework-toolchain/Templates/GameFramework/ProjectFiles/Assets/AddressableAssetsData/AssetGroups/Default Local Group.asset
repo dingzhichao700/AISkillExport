@@ -17,13 +17,14 @@ MonoBehaviour:
     m_SerializedData: []
   m_GUID: 94cf66f1d78353f4d9db978ed4aa4477
   m_SerializeEntries:
+  - m_GUID: 458985db52d368844b989108817c2b52
+    m_Address: Assets/Prefab/default/mainView/MainPanel.prefab
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - main-content
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 648a65727e384bc4ea92de659b650648
     m_Address: Assets/Art/atlas/default/common.png
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: e2f064082b7ec214cb7d4a2dbd14806c
-    m_Address: Assets/Prefab/default/common/GameButton.prefab
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0

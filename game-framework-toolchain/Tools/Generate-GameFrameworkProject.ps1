@@ -1,4 +1,4 @@
-#Requires -Version 5.1
+﻿#Requires -Version 5.1
 <#
 .SYNOPSIS
   Generate a self-contained Game Framework Unity sample project.
@@ -18,6 +18,10 @@ param(
     [string]$OutputRoot = 'D:\DingWork',
     [string]$TemplateRoot,
     [string]$UnityEditor,
+    [ValidateSet("Standalone", "WeChat")][string]$Platform = "WeChat",
+    [string]$BootstrapUrl,
+    [string]$CdnRoot,
+    [string]$AppId,
     [switch]$Force
 )
 
@@ -137,7 +141,8 @@ function Invoke-UnityBatch([string]$ProjectPath, [string]$LogFile, [string]$Exec
         $arguments += '-quit'
     }
 
-    $process = Start-Process -FilePath $script:UnityEditorPath -ArgumentList $arguments -PassThru -NoNewWindow
+    $quotedArguments = @($arguments | ForEach-Object { if ($_ -match "\s") { '"' + $_ + '"' } else { $_ } })
+    $process = Start-Process -FilePath $script:UnityEditorPath -ArgumentList $quotedArguments -PassThru -WindowStyle Hidden
     if (-not $process.WaitForExit(900000)) {
         try { $process.Kill() } catch { }
         throw "Unity batch timed out after 15 minutes. Log: $LogFile"
@@ -162,10 +167,11 @@ function Invoke-UnityBatch([string]$ProjectPath, [string]$LogFile, [string]$Exec
 }
 
 function Update-GeneratedProject([string]$Root, [string]$ProjectPath) {
-    Copy-Item -LiteralPath (Join-Path $RepoRoot 'AGENTS.md') -Destination (Join-Path $Root 'AGENTS.md') -Force
+    $agentText = [IO.File]::ReadAllText((Join-Path $RepoRoot 'AGENTS.md')).Replace('(docs/', '(文档/开发规范/')
+    [IO.File]::WriteAllText((Join-Path $Root 'AGENTS.md'), $agentText, [Text.UTF8Encoding]::new($false))
     $docsSource = Join-Path $RepoRoot 'docs'
     if (Test-Path -LiteralPath $docsSource) {
-        Copy-Tree $docsSource (Join-Path $Root 'docs')
+        Copy-Tree $docsSource (Join-Path $Root '文档\开发规范')
     }
     $gitignore = Join-Path $PSScriptRoot 'unity-project.gitignore'
     if (Test-Path -LiteralPath $gitignore) {
@@ -188,7 +194,7 @@ Game Framework sample generated from the self-contained `game-framework-toolchai
 
 - Open in Unity Hub: `Project/`
 - Project rules: `AGENTS.md`
-- Directory rules: `docs/目录与分包原则.md`
+- Directory rules: `文档/开发规范/目录与分包原则.md`
 - Generated: $generatedAt
 
 Addressables are prepared during export. If runtime loading fails, run **Tools -> Addressables -> Build All**.
@@ -211,7 +217,7 @@ function Assert-ExportComplete([string]$ProjectPath) {
     foreach ($relative in @(
         'Assets\Scenes\GameEntrance.unity',
         'Assets\Scenes\UIEditor.unity',
-        'Assets\Scripts\csharp\com\core\RookieEngine.cs',
+        'Assets\Scripts\csharp\foundation\core\RookieEngine.cs',
         'Assets\Editor\GameFrameworkExportPipeline.cs',
         'Packages\manifest.json',
         'Packages\packages-lock.json',
@@ -222,14 +228,22 @@ function Assert-ExportComplete([string]$ProjectPath) {
             throw "Generated project is incomplete: $relative"
         }
     }
-    if (Test-Path -LiteralPath (Join-Path (Split-Path $ProjectPath -Parent) 'docs\docs')) {
-        throw 'Generated project contains duplicated docs/docs nesting.'
+    foreach ($required in @('ConfigResource\luban.conf', 'ConfigResource\gen_json.bat', 'ConfigResource\gen_bin.bat', 'Tools\Luban\Luban.dll')) {
+        if (!(Test-Path -LiteralPath (Join-Path $ProjectPath $required))) { throw "Missing exported Luban file: $required" }
+    }
+    $exportRoot = Split-Path $ProjectPath -Parent
+    foreach ($required in @('文档\开发规范\README.md', '文档\配置表\__beans__.xlsx', '文档\配置表\__enums__.xlsx', '文档\配置表\__tables__.xlsx', '文档\配置表\GMResource.xlsx', '文档\配置表\SettingOptionResource.xlsx')) {
+        if (!(Test-Path -LiteralPath (Join-Path $exportRoot $required))) { throw "Missing exported document: $required" }
+    }
+    if (Test-Path -LiteralPath (Join-Path $exportRoot 'docs')) {
+        throw 'Generated project must use 文档/开发规范 instead of root docs.'
     }
     $marker = Join-Path $ProjectPath 'Assets\AddressableAssetsData\.export-baseline-complete.txt'
     if (-not ((Test-Path -LiteralPath $marker) -and ((Get-Content -LiteralPath $marker -Raw) -match '^ok\b'))) {
         throw "Addressables completion marker missing or failed: $marker"
     }
     $bundles = Get-ChildItem -LiteralPath (Join-Path $ProjectPath 'Library\com.unity.addressables') -Filter '*.bundle' -File -Recurse -ErrorAction SilentlyContinue
+    if ($Platform -eq 'WeChat') { $bundles = Get-ChildItem -LiteralPath (Join-Path $ProjectPath 'ServerData') -Filter '*.bundle' -File -Recurse -ErrorAction SilentlyContinue }
     if (-not $bundles) {
         throw 'Addressables build produced no bundle files.'
     }
@@ -285,13 +299,26 @@ try {
     Write-Step "Copy self-contained template: $ProjectFiles"
     Ensure-Directory $StageProject
     Copy-Tree $ProjectFiles $StageProject
+    Copy-Tree (Join-Path $TemplateRoot 'RootFiles') $StageProjectRoot
     Install-ProjectTexturePacker -ProjectPath $StageProject
     Update-GeneratedProject -Root $StageProjectRoot -ProjectPath $StageProject
+    $platformArgs = @{ ProjectPath = $StageProject; Platform = $Platform }
+    foreach ($key in @('BootstrapUrl', 'CdnRoot', 'AppId')) {
+        if ($PSBoundParameters.ContainsKey($key)) { $platformArgs[$key] = $PSBoundParameters[$key] }
+    }
+    & (Join-Path $PSScriptRoot 'Set-GameFrameworkPlatform.ps1') @platformArgs
+    Ensure-Directory (Join-Path $StageProjectRoot 'Tools')
+    Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'Set-GameFrameworkPlatform.ps1') -Destination (Join-Path $StageProjectRoot 'Tools')
+    $releaseWrapper = Join-Path $RepoRoot '../game-build-release/assets/Build-WeChatHotUpdate.ps1'
+    if (!(Test-Path -LiteralPath $releaseWrapper)) { throw 'Missing sibling game-build-release skill.' }
+    Copy-Item -LiteralPath $releaseWrapper -Destination (Join-Path $StageProjectRoot 'Tools')
 
     $script:UnityEditorPath = Resolve-UnityEditor -ExplicitPath $UnityEditor
     Write-Step "Unity: $script:UnityEditorPath"
     $logs = Join-Path $StageProject 'Logs'
     Ensure-Directory $logs
+    Write-Step 'Generate baseline Luban JSON and C# from project workbooks'
+    & (Join-Path $PSScriptRoot 'Invoke-LubanScript.ps1') -ConfigResourcePath (Join-Path $StageProject 'ConfigResource') -Format json
     Write-Step 'Unity pass 1/2: import and compile'
     Invoke-UnityBatch -ProjectPath $StageProject -LogFile (Join-Path $logs 'export-import.log')
     Write-Step 'Unity pass 2/2: initialize and build Addressables'

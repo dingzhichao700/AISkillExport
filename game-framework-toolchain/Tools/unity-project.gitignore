@@ -24,9 +24,8 @@ sysinfo.txt
 # Addressables / player build output
 **/ServerData/
 **/AssetBundles/
-[Aa]ssets/StreamingAssets/aa/*
-![Aa]ssets/StreamingAssets/aa.meta
-![Aa]ssets/StreamingAssets/aa/*
+**/[Aa]ssets/StreamingAssets/aa/
+**/[Aa]ssets/StreamingAssets/aa.meta
 
 # IDE
 .vs/
@@ -51,3 +50,14 @@ Desktop.ini
 **/work/
 **/outputs/
 **/*.inspect.ndjson
+
+# HybridCLR generated build state
+**/HybridCLRData/
+**/Assets/HotUpdateBytes/
+**/Assets/HybridCLRGenerate/
+**/Assets/Editor/HybridCLRGenerate/
+
+**/Assets/Resources/GameFrameworkHotUpdateBase.txt*
+**/Assets/HotUpdateBytes.meta
+**/Assets/HybridCLRGenerate.meta
+**/Assets/Editor/HybridCLRGenerate.meta

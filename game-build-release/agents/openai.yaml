@@ -1,0 +1,4 @@
+interface:
+  display_name: "游戏工程构建与发布"
+  short_description: "面向规范化 Unity 样例工程的通用构建、版本校验与发布工具链"
+  default_prompt: "使用 $game-build-release 检查当前工程，并按已确认的平台和环境执行构建发布。"

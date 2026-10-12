@@ -1,4 +1,4 @@
-#Requires -Version 5.1
+﻿#Requires -Version 5.1
 param([string]$TemplateRoot)
 
 $ErrorActionPreference = 'Stop'
@@ -9,6 +9,21 @@ $TemplateRoot = [IO.Path]::GetFullPath($TemplateRoot)
 $ProjectFiles = Join-Path $TemplateRoot 'ProjectFiles'
 $RepoRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $errors = [Collections.Generic.List[string]]::new()
+
+foreach ($relative in @('ConfigResource\luban.conf', 'ConfigResource\Defines\builtin.xml', 'ConfigResource\gen_json.bat', 'ConfigResource\gen_bin.bat', 'ConfigResource\gen.sh', 'Tools\Luban\Luban.dll', 'Tools\Luban\Luban.runtimeconfig.json', 'Tools\Luban.lock.json')) {
+    if (!(Test-Path -LiteralPath (Join-Path $ProjectFiles $relative))) { $errors.Add("Missing Luban tooling: $relative") }
+}
+foreach ($name in @('__beans__', '__enums__', '__tables__', 'GMResource', 'SettingOptionResource')) {
+    if (!(Test-Path -LiteralPath (Join-Path $TemplateRoot "RootFiles\文档\配置表\$name.xlsx"))) { $errors.Add("Missing source workbook: $name") }
+}
+$lockPath = Join-Path $ProjectFiles 'Tools\Luban.lock.json'
+if (Test-Path -LiteralPath $lockPath) {
+    $toolLock = Get-Content -LiteralPath $lockPath -Raw -Encoding UTF8 | ConvertFrom-Json
+    foreach ($entry in $toolLock.files) {
+        $file = Join-Path $ProjectFiles ('Tools\Luban\' + $entry.path)
+        if (!(Test-Path -LiteralPath $file) -or (Get-FileHash -LiteralPath $file).Hash -ne $entry.sha256) { $errors.Add("Luban distribution mismatch: $($entry.path)") }
+    }
+}
 
 function Require-Path([string]$RelativePath) {
     if (-not (Test-Path -LiteralPath (Join-Path $ProjectFiles $RelativePath))) {
@@ -26,9 +41,9 @@ foreach ($path in @(
     'ProjectSettings\EditorBuildSettings.asset',
     'Assets\Scenes\GameEntrance.unity',
     'Assets\Scenes\UIEditor.unity',
-    'Assets\Scripts\csharp\com\core\RookieEngine.cs',
-    'Assets\Scripts\csharp\com\game\config\CfgManager.cs',
-    'Assets\Scripts\csharp\com\game\opening\OpeningPanel.cs',
+    'Assets\Scripts\csharp\foundation\core\RookieEngine.cs',
+    'Assets\Scripts\csharp\login\config\CfgManager.cs',
+    'Assets\Scripts\csharp\login\opening\OpeningPanel.cs',
     'Assets\Editor\GameFrameworkExportPipeline.cs',
     'Assets\Editor\uiComponent\UIBinderInspector.cs',
     'Assets\AddressableAssetsData\AddressableAssetSettings.asset',
@@ -79,24 +94,24 @@ if (Test-Path -LiteralPath $manifestPath) {
             $errors.Add("Required package missing from manifest: $dependency")
         }
     }
-    foreach ($forbiddenPackage in @('com.unity.render-pipelines.universal', 'wechat', 'runtimeinspector')) {
+    foreach ($forbiddenPackage in @('com.unity.render-pipelines.universal', 'runtimeinspector')) {
         if ($manifest -match [regex]::Escape($forbiddenPackage)) {
             $errors.Add("Forbidden package in manifest: $forbiddenPackage")
         }
     }
 }
 
-$rookieEnginePath = Join-Path $ProjectFiles 'Assets\Scripts\csharp\com\core\RookieEngine.cs'
+$rookieEnginePath = Join-Path $ProjectFiles 'Assets\Scripts\csharp\foundation\core\RookieEngine.cs'
 if (Test-Path -LiteralPath $rookieEnginePath) {
     $rookieEngine = Get-Content -LiteralPath $rookieEnginePath -Raw -Encoding UTF8
     $timerInit = $rookieEngine.IndexOf('_timer = new Timer()', [StringComparison]::Ordinal)
-    $settingsRead = $rookieEngine.IndexOf('PersistentDataControl.ins.ReadUserSetting()', [StringComparison]::Ordinal)
-    if ($timerInit -lt 0 -or $settingsRead -lt 0 -or $timerInit -gt $settingsRead) {
-        $errors.Add('RookieEngine must initialize timer before ReadUserSetting; setting correction dispatches timer-dependent events.')
+    $entryStart = $rookieEngine.IndexOf('GameEntrance.ins.StartGame()', [StringComparison]::Ordinal)
+    if ($timerInit -lt 0 -or $entryStart -lt 0 -or $timerInit -gt $entryStart -or $rookieEngine -match 'PersistentDataControl') {
+        $errors.Add('Foundation must initialize timer before starting modules and must not reference business persistence.')
     }
 }
 
-$cfgManagerPath = Join-Path $ProjectFiles 'Assets\Scripts\csharp\com\game\config\CfgManager.cs'
+$cfgManagerPath = Join-Path $ProjectFiles 'Assets\Scripts\csharp\login\config\CfgManager.cs'
 if (Test-Path -LiteralPath $cfgManagerPath) {
     $cfgManager = Get-Content -LiteralPath $cfgManagerPath -Raw -Encoding UTF8
     if ($cfgManager -notmatch 'public static void Init\(\)' -or $cfgManager -notmatch 'ResourceManager\.GetJsonNode\(path\)') {
@@ -107,13 +122,15 @@ if (Test-Path -LiteralPath $cfgManagerPath) {
     }
 }
 
-$openingPanelPath = Join-Path $ProjectFiles 'Assets\Scripts\csharp\com\game\opening\OpeningPanel.cs'
+$openingPanelPath = Join-Path $ProjectFiles 'Assets\Scripts\csharp\login\opening\OpeningPanel.cs'
 if (Test-Path -LiteralPath $openingPanelPath) {
     $openingPanel = Get-Content -LiteralPath $openingPanelPath -Raw -Encoding UTF8
-    $configPreload = $openingPanel.IndexOf('foreach (string cfgName in ResourceConst.ALL_CONFIG_LIST)', [StringComparison]::Ordinal)
-    $configInit = $openingPanel.IndexOf('CfgManager.Init()', [StringComparison]::Ordinal)
-    if ($configPreload -lt 0 -or $configInit -lt 0 -or $configPreload -gt $configInit) {
-        $errors.Add('OpeningPanel must preload ALL_CONFIG_LIST before initializing CfgManager.')
+    if ($openingPanel -match 'CfgManager|ALL_CONFIG_LIST|LoadModuleAsync') {
+        $errors.Add('OpeningPanel must not initialize configuration or Main.')
+    }
+    $loginPanel = Get-Content -LiteralPath (Join-Path $ProjectFiles 'Assets/Scripts/csharp/login/title/view/LoginPanel.cs') -Raw -Encoding UTF8
+    if ($loginPanel -notmatch 'CfgManager.EnsureLoadedAsync') {
+        $errors.Add('LoginPanel must initialize configurations before entering dependent screens.')
     }
 }
 
@@ -179,11 +196,46 @@ if (Test-Path -LiteralPath $texturePackerTool -PathType Leaf) {
     }
 }
 
+# A fresh default project must already contain the WeChat integration inputs.
+$platformConfig = Get-Content (Join-Path $ProjectFiles 'ProjectSettings/FrameworkPlatform.json') -Raw | ConvertFrom-Json
+if ($platformConfig.platform -ne 'WeChat') { $errors.Add('Template default must be WeChat-ready.') }
+$packageConfig = Get-Content (Join-Path $ProjectFiles 'Packages/manifest.json') -Raw | ConvertFrom-Json
+foreach ($dependency in @('com.code-philosophy.hybridclr', 'com.qq.weixin.minigame')) {
+    if (!$packageConfig.dependencies.$dependency) { $errors.Add("Missing WeChat dependency: $dependency") }
+}
+$hybridConfig = Get-Content (Join-Path $ProjectFiles 'ProjectSettings/HybridCLRSettings.asset') -Raw
+foreach ($module in @('login/Login', 'main/Main')) {
+    $meta = Get-Content (Join-Path $ProjectFiles ("Assets/Scripts/csharp/" + $module + '.asmdef.meta')) -Raw
+    $moduleGuid = [regex]::Match($meta, 'guid: ([a-f0-9]+)').Groups[1].Value
+    if (!$moduleGuid -or !$hybridConfig.Contains($moduleGuid)) { $errors.Add("Missing hot-update assembly: $module") }
+}
+if ((Get-Content (Join-Path $ProjectFiles 'Assets/csc.rsp') -Raw) -notmatch 'GAMEFRAMEWORK_WECHAT') { $errors.Add('Missing WeChat compilation symbol.') }
+
+# The baseline must not recreate the old whole-common-atlas migration.
+foreach ($obsolete in @('Assets/Art/atlas/title/common.png', 'Assets/Art/atlasSource/title/common')) {
+    if (Test-Path -LiteralPath (Join-Path $ProjectFiles $obsolete)) {
+        $errors.Add("Obsolete title common atlas baseline: $obsolete")
+    }
+}
+$dependencyChecker = Join-Path $ProjectFiles 'Assets/Editor/addressable/AddressablesPrefabDependencyChecker.cs'
+if (!(Test-Path -LiteralPath $dependencyChecker)) {
+    $errors.Add('Missing stage dependency checker.')
+}
+foreach ($buildEntry in @('Assets/Editor/addressable/AddressablesAutoBuilder.cs', 'Assets/Editor/FrameworkWeChatBuild.cs')) {
+    $buildSource = Get-Content -LiteralPath (Join-Path $ProjectFiles $buildEntry) -Raw
+    $buildCount = [regex]::Matches($buildSource, 'AddressableAssetSettings.BuildPlayerContent\(').Count
+    $gateCount = [regex]::Matches($buildSource, 'AddressablesPrefabDependencyChecker.ValidateOrThrow\(\);\s*AddressableAssetSettings.BuildPlayerContent\(').Count
+    if ($buildCount -eq 0 -or $gateCount -ne $buildCount) {
+        $errors.Add("Every content build must validate stage dependencies first: $buildEntry")
+    }
+}
+
 if ($errors.Count -gt 0) {
     $errors | ForEach-Object { Write-Error $_ -ErrorAction Continue }
     throw "Template validation failed with $($errors.Count) error(s)."
 }
 
 $version = Get-Content -LiteralPath (Join-Path $ProjectFiles 'ProjectSettings\ProjectVersion.txt') -Encoding UTF8 | Select-Object -First 1
+& (Join-Path $PSScriptRoot 'Test-LubanConfiguration.ps1') -TemplateRoot $TemplateRoot
 $fileCount = (Get-ChildItem -LiteralPath $ProjectFiles -File -Recurse -Force | Measure-Object).Count
 Write-Host "Template validation passed: $fileCount files; $version" -ForegroundColor Green

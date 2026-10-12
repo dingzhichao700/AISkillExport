@@ -50,27 +50,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 625d42892ede9214cb55b6772a116166, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  csharpAssetPath: Assets/Scripts/csharp/com/game/setting/view/SettingTabItem.cs
+  scriptTypeName: KeyHintItem, Login
+  csharpAssetPath: Assets/Scripts/csharp/login/keyHint/KeyHintItem.cs
   csharpAsset: 
   uiList:
-  - id: 1
-    uiName: boxContent
-    uiTypeName: RectTransform
-    isCustomClass: 0
-    customClassName: 
-    go: {fileID: 0}
   - id: 2
     uiName: imgBg
     uiTypeName: Image
     isCustomClass: 0
     customClassName: 
     go: {fileID: 2974336576968720590}
-  - id: 3
-    uiName: imgHoverLight
-    uiTypeName: RectTransform
-    isCustomClass: 0
-    customClassName: 
-    go: {fileID: 0}
   - id: 4
     uiName: txtLabel
     uiTypeName: TextMeshProUGUI
@@ -221,7 +210,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 625d42892ede9214cb55b6772a116166, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  csharpAssetPath: Assets/Scripts/csharp/com/game/keyHint/KeyHintView.cs
+  scriptTypeName: KeyHintView, Login
+  csharpAssetPath: Assets/Scripts/csharp/login/keyHint/KeyHintView.cs
   csharpAsset: 
   uiList:
   - id: 1
@@ -373,7 +363,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: -218882608491936342, guid: 648a65727e384bc4ea92de659b650648, type: 3}
+  m_Sprite: {fileID: 1983237127, guid: 240a1d1404072a843883f02017283a0c, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1

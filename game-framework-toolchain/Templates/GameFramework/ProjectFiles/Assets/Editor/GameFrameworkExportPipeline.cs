@@ -74,6 +74,7 @@ public static class GameFrameworkExportPipeline
         Debug.Log("[export] Step 1: Create / link Addressables Settings...");
         AddressablesProjectBootstrap.EnsureReady(log: true);
         FrameworkSetup.EnsureAddressablesOnly();
+        FrameworkTemplateMigration.PrepareAssets();
 
         Debug.Log("[export] Step 1a: Enable Input System player backend...");
         FrameworkSetup.EnsureInputSystemPlayerSettings();
@@ -109,6 +110,7 @@ public static class GameFrameworkExportPipeline
     {
         Debug.Log("[export] Step 2: Assign Game Addressables (Build Game Addressables)...");
         AddressablesAutoBuilder.AssignGameAddressables();
+        FrameworkPlatformConfig.ApplyAddressables();
 
         Debug.Log("[export] Step 3: BuildPlayerContent...");
         AddressablesAutoBuilder.BuildPlayerContent();

@@ -39,6 +39,12 @@ When the user says **标准化回写**:
 
 ## Validate outputs
 
+For configuration tooling and export layout, read `docs/配置表工具链规范.md`.
+Export `RootFiles` beside `Project`, map repository docs to `文档/开发规范`,
+and include the five baseline workbooks, ConfigResource scripts/configuration,
+and the complete locked Luban generator. Run the JSON/bin generation check;
+the embedded Unity package alone is not a complete Luban development toolchain.
+
 Check proportionally to the change:
 
 - the template contains `Assets`, `Packages`, `ProjectSettings`, embedded dependencies, and no external-project reference;
@@ -53,3 +59,9 @@ Check proportionally to the change:
 ## Finish
 
 Report changed source files, generated project path if any, validation performed, pending Unity-only checks, and uncommitted state.
+
+## Build and release existing projects
+
+Use the sibling `game-build-release` Skill for platform builds, content updates and deployment. Read `docs/构建发布规范.md`. This skill still owns template generation and its required Addressables validation. The generator copies the compatibility entry from `../game-build-release/assets`; install both skills from this repository.
+
+Default generation is WeChat-ready (pinned package dependencies, assembly references, symbol and hot-update assembly settings). Do not switch Unity to WebGL during generation. game-build-release owns target selection and machine-specific HybridCLR preparation; project AppID/CDN are supplied before release. Explicit Standalone remains supported.

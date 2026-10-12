@@ -38,7 +38,7 @@ MonoBehaviour:
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: e44b7641cfda38d4ab1733ed2991ca67
-    m_Address: Assets/Art/unpack/opening/studioPrint.png
+    m_Address: Assets/Art/unpack/opening/opening/studioPrint.png
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0

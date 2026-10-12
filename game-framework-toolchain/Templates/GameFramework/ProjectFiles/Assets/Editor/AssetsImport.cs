@@ -12,9 +12,10 @@ public class AssetsImport : AssetPostprocessor {
         if (assetPath.Contains(ResourceConst.PATH_ATLAS) || assetPath.Contains(ResourceConst.PATH_UI_REFERENCE)) {
             TextureImporter importer = (TextureImporter)assetImporter;
             importer.textureType = TextureImporterType.Sprite;
-            importer.streamingMipmaps = true;
-            importer.mipmapEnabled = true;
-            importer.isReadable = true;
+            importer.streamingMipmaps = false;
+            importer.mipmapEnabled = false;
+            // 普通 UI 图集仅供显示，不保留 CPU 像素副本。
+            importer.isReadable = false;
             importer.filterMode = FilterMode.Point;
             importer.wrapMode = TextureWrapMode.Clamp;
             importer.spriteImportMode = SpriteImportMode.Multiple;
@@ -31,7 +32,7 @@ public class AssetsImport : AssetPostprocessor {
             defaultSettings.textureCompression = TextureImporterCompression.Uncompressed;
             importer.SetPlatformTextureSettings(defaultSettings);
 
-            importer.SaveAndReimport();
+            importer.SetTextureSettings(settings);
         }
 
         if (assetPath.Contains(ResourceConst.PATH_ATLAS_SOURCE) ||
@@ -42,7 +43,8 @@ public class AssetsImport : AssetPostprocessor {
             importer.textureType = TextureImporterType.Sprite;
             importer.streamingMipmaps = false;
             importer.mipmapEnabled = false;
-            importer.isReadable = assetPath.Contains(ResourceConst.PATH_FRAME_ANIMATION);
+            // 帧动画直接引用图集区域，不再读取 CPU 像素。
+            importer.isReadable = false;
             importer.filterMode = FilterMode.Point;
             importer.wrapMode = TextureWrapMode.Clamp;
             importer.spriteImportMode = SpriteImportMode.Single;
@@ -59,7 +61,7 @@ public class AssetsImport : AssetPostprocessor {
             defaultSettings.format = TextureImporterFormat.Automatic;
             importer.SetPlatformTextureSettings(defaultSettings);
 
-            importer.SaveAndReimport();
+            importer.SetTextureSettings(settings);
         }
     }
 
@@ -73,7 +75,7 @@ public class AssetsImport : AssetPostprocessor {
             settings.spriteAlignment = (int)SpriteAlignment.Custom;
             settings.spritePivot = new Vector2(0, 0);
             importer.SetTextureSettings(settings);
-            importer.SaveAndReimport();
+            importer.SetTextureSettings(settings);
             AssetDatabase.ImportAsset(assetPath);
         }
     }

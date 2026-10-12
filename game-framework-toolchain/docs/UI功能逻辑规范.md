@@ -2,6 +2,8 @@
 
 > 适用范围：基于本模板开发的 Unity uGUI 窗口绑定类与功能逻辑代码。
 
+UIBinder 可见绑定与运行时解析、跨平台输入和舞台尺寸响应，统一遵循 [运行时框架与加载规范.md](运行时框架与加载规范.md)，不得以旧类名回退掩盖空绑定。
+
 ## BasePanel 窗口规范
 
 1. UI 作为窗口使用时，对应的绑定类必须继承 `BasePanel`。
@@ -88,3 +90,8 @@ UIBinder 自动生成的成员区域继续由工程既有生成器维护，不�
 - 模块存在 `{Module}Model` 时，模块入口 `{Module}Control` 必须通过只读属性 `model` 暴露其实例，统一使用 `{Module}Control.ins.model` 访问模块数据。`Control` 负责业务流程，`Model` 负责数据集合、查询、初始化与存储边界。
 - `View` 负责显示与输入，可以通过 `{Module}Control.ins.model` 读取展示数据；数据修改、状态推进及其他业务动作应调用 `Control` 的业务方法，不得由 `View` 直接修改 `VO`。
 - 原型阶段用于代替正式配置系统的静态配置类放入 `constant/`，并在类注释中标明未来配置来源；不得把大型配置类附加在 Panel 或其他 View 文件中。
+
+
+## 程序集分层的路径适配
+
+本文旧 `com/game/{module}` 路径表示模块内部组织示例。采用程序集分层时，模块根改为 `Assets/Scripts/csharp/{程序集}/{module}`；view、model、model/vo、constant 等内部职责不变。Foundation 不承载设置界面等业务 UI，Login 不依赖 Main，详见运行时与平台专项规范。

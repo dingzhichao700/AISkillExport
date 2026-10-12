@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using UnityEditor;
@@ -66,6 +66,11 @@ public class UIBinderInspector : Editor
         cachedCsharpAsset = AssetDatabase.LoadAssetAtPath(cachedCSharpPathProp.stringValue, typeof(Object));
         //再尝试把缓存文件对象放到对象选框中
         tempCSharpAsset = EditorGUILayout.ObjectField(cachedCsharpAsset, typeof(Object), false);
+        if (tempCSharpAsset == null && cachedCsharpAsset != null) {
+            cachedCSharpPathProp.stringValue = string.Empty;
+            binding.ApplyModifiedProperties();
+            _target.RefreshScriptBinding();
+        }
         if (tempCSharpAsset)
         {
             string path = AssetDatabase.GetAssetPath(tempCSharpAsset);
@@ -76,6 +81,7 @@ public class UIBinderInspector : Editor
                     //如果缓存对象路径和临时资源对象的路径不一致，记录并同步
                     cachedCSharpPathProp.stringValue = path;
                     binding.ApplyModifiedProperties();
+                    _target.RefreshScriptBinding();
                 }
             }
             else
@@ -222,6 +228,7 @@ public class UIBinderInspector : Editor
             {
                 cachedCSharpPathProp.stringValue = assetPath;
                 binding.ApplyModifiedProperties();
+                    _target.RefreshScriptBinding();
             }
             _findCSharpWindow.Close();
             _findCSharpWindow = null;

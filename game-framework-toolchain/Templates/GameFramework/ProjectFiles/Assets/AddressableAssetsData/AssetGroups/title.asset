@@ -17,11 +17,6 @@ MonoBehaviour:
     m_SerializedData: []
   m_GUID: 6d2c545a885403549acf812cf0e01844
   m_SerializeEntries:
-  - m_GUID: 0474fe58d10cba94da6955102dfb9e95
-    m_Address: Assets/ConfigBin/cfgobj_settingoptionobj.json
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 126f5bf6e19ff8342a04482c5895ff23
     m_Address: Assets/Prefab/title/loading/LoadingPanel.prefab
     m_ReadOnly: 0
@@ -32,8 +27,13 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 24a0570f79a517c4099bb118f5c1acd2
+    m_Address: Assets/Art/unpack/title/title/bg_option.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 29b6f9ad5dc358b42ace9b7faa53ede9
-    m_Address: Assets/Prefab/title/title/TitlePanel.prefab
+    m_Address: Assets/Prefab/title/title/LoginPanel.prefab
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
@@ -97,8 +97,8 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: 24a0570f79a517c4099bb118f5c1acd2
-    m_Address: Assets/Art/unpack/title/title/bg_option.png
+  - m_GUID: e2f064082b7ec214cb7d4a2dbd14806c
+    m_Address: Assets/Prefab/title/common/GameButton.prefab
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0

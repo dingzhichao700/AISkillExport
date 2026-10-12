@@ -14,7 +14,12 @@
 - [`docs/AIUI编辑器队列规范.md`](docs/AIUI编辑器队列规范.md)：Unity 状态识别、Play 控制、请求提交和进程边界。
 - [`docs/README.md`](docs/README.md)：专项文档索引。
 
+- [`docs/运行时框架与加载规范.md`](docs/运行时框架与加载规范.md)：程序集边界、异步加载、Timer、帧动画及 UI 绑定。
+- [`docs/微信小游戏平台规范.md`](docs/微信小游戏平台规范.md)：微信平台默认的 HybridCLR、资源加载、版本、缓存及发布协议。
+
 专项细节只在对应文档维护，本文不复制完整路径表。
+
+涉及框架性能、资源加载或程序集迁移时必须读取运行时专项规范；涉及微信小游戏、HybridCLR、Catalog、底座/内容版本或 CDN 发布时必须读取微信平台专项规范。微信平台采用该规范的完整默认策略；其他平台另行定义，不套用微信专属执行方式。
 
 ## 仓库定位
 
@@ -55,19 +60,21 @@ game-framework-toolchain/
 | 入口类 | `RookieEngine` |
 | 场景 | `GameEntrance`、`UIEditor` 两个场景 |
 | Input System | `activeInputHandler: 2`（Both） |
-| Addressables | opening、title、Default Local Group、scene、cutScene；暂不含 region |
-| 配置 | title baseline 只带必要配置，不迁全量业务表 |
+| Addressables | 按生命周期和阶段分组；旧模板五组为迁移起点，微信策略另设 configData、公共字体及程序集资源组 |
+| 配置 | 模板只带通用必需配置，不迁样例业务表；微信使用 configData 独立分组并在 LoginPanel 打开时加载初始化 |
 
 界面通过 Panel 与 Addressables 切换，不为每个界面增加 Unity Scene。
 
 ## 模板必须包含
 
+- 完整 Luban 开发工具链：`RootFiles/文档/配置表` 中五张基础表、`ProjectFiles/ConfigResource` 和 `ProjectFiles/Tools/Luban`，详见 [配置表工具链规范](docs/配置表工具链规范.md)。导出工程的规范统一放入 `文档/开发规范`，不再生成根目录 `docs`。
+
 - 完整 `Assets`、`Packages`、`ProjectSettings`。
 - 内嵌 `Packages/com.code-philosophy.luban`。
 - TMP Essentials、DOTween、TexturePacker importer 和必要 Editor 工具。
 - `GameEntrance`、`UIEditor`。
-- Opening、Title 与公共 UI baseline。
-- Addressables 设置及五组定义。
+- Opening、Login、Option、Setting、最小 Main 与公共 UI baseline。
+- Addressables 设置及与所选平台策略一致的组定义；平台配置及验收边界见模板与导出规范。
 
 模板禁止包含 `Library`、`Temp`、`Logs`、`UserSettings`、`.vs`、工程文件，以及 bag、bagcartoon、baglegendary、shop、AIUI 临时生成器等实验内容。
 
@@ -97,4 +104,12 @@ powershell -ExecutionPolicy Bypass -File Tools/Generate-GameFrameworkProject.ps1
 powershell -ExecutionPolicy Bypass -File Tools/Test-GameFrameworkTemplate.ps1
 ```
 
-完整验收还包括：从仓库独立导出新样例、Unity 无编译错误、Addressables 构建成功、无 Missing Script/Sprite，并人工验证 `GameEntrance → Opening → Title → Option`。
+完整验收还包括：从仓库独立导出新样例、Unity 无编译错误、Addressables 构建成功、无 Missing Script/Sprite，并人工验证 `GameEntrance → Opening → Login → Option → Loading → Main`。
+
+## 构建发布入口
+
+构建和发布使用 `game-build-release` Skill，先阅读 [docs/构建发布规范.md](docs/构建发布规范.md)。模板生成及回写仍使用 `game-framework-toolchain`。
+
+## 微信构建就绪基线
+
+默认模板携带锁定的微信 SDK/HybridCLR 依赖、编译宏、程序集引用和 Login/Main 热更新配置。生成器不切换 WebGL；目标切换与本机 HybridCLR 运行时安装由 game-build-release 在实际构建阶段负责。项目 AppID/CDN 留空等待工程配置；不回写案例底座版本、DLL、AOT 或 HybridCLRData。显式 Standalone 导出仍关闭微信策略。
