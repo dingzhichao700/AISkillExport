@@ -1,0 +1,6 @@
+interface:
+  display_name: "角色动画生成流程"
+  short_description: "从方向参考图经外部视频模型生成动作，核验循环并导出对齐的透明 PNG 序列"
+  default_prompt: "使用 $character-animation-pipeline，按指定视角和方向，以参考图确认、动作视频核验、完整透明 PNG 交付的流程制作角色动作。"
+policy:
+  allow_implicit_invocation: true

@@ -8,6 +8,7 @@ Current skills:
 - `game-art-asset-pipeline`
 - `game-feature-logic`
 - `game-framework-toolchain`
+- `character-animation-pipeline`
 
 Each skill folder contains:
 

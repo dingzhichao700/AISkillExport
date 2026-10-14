@@ -14,7 +14,8 @@ $skillNames = @(
     "aiui-to-ugui",
     "game-art-asset-pipeline",
     "game-feature-logic",
-    "game-framework-toolchain"
+    "game-framework-toolchain",
+    "character-animation-pipeline"
 )
 
 New-Item -ItemType Directory -Path $TargetRoot -Force | Out-Null
