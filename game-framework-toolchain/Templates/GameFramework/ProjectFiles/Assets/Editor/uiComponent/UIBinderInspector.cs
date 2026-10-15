@@ -49,11 +49,33 @@ public class UIBinderInspector : Editor
 
     private int popIndex;
 
+    // 仅保存在 Inspector 实例中，不序列化到绑定组件或预制体。
+    private string bindingSearch = string.Empty;
+
     private void OnEnable()
     {
         _target = target as UIBinder;
         binding = new SerializedObject(target);
         cachedCSharpPathProp = binding.FindProperty("csharpAssetPath");
+        bindingSearch = string.Empty;
+        Selection.selectionChanged += OnSelectionChanged;
+    }
+
+    private void OnDisable()
+    {
+        Selection.selectionChanged -= OnSelectionChanged;
+    }
+
+    private void OnSelectionChanged()
+    {
+        bindingSearch = string.Empty;
+        Repaint();
+    }
+
+    private static bool MatchesBinding(UIBindComponentData item, string query)
+    {
+        return query.Length == 0 || (item.go != null &&
+            item.go.name.IndexOf(query, System.StringComparison.OrdinalIgnoreCase) >= 0);
     }
 
     public override void OnInspectorGUI()
@@ -103,12 +125,39 @@ public class UIBinderInspector : Editor
         //绘制需要导出的ui变量列表
         int maxId = 0;
         List<UIBindComponentData> uiList = _target.uiList;
+        GUILayout.BeginHorizontal();
+        GUILayout.Label("搜索绑定", GUILayout.Width(60));
+        bindingSearch = EditorGUILayout.TextField(bindingSearch);
+        if (GUILayout.Button("清空", GUILayout.Width(50)))
+        {
+            bindingSearch = string.Empty;
+            GUI.FocusControl(null);
+        }
+        GUILayout.EndHorizontal();
+
+        string query = bindingSearch.Trim();
+        int matchCount = 0;
+        if (uiList != null)
+        {
+            foreach (UIBindComponentData item in uiList)
+            {
+                // 隐藏项仍参与新增编号计算，过滤不改变原列表索引。
+                maxId = Mathf.Max(maxId, item.id);
+                if (MatchesBinding(item, query)) matchCount++;
+            }
+        }
+        EditorGUILayout.LabelField($"匹配：{matchCount} / {uiList?.Count ?? 0}", EditorStyles.miniLabel);
+        if (query.Length > 0 && matchCount == 0)
+        {
+            EditorGUILayout.HelpBox("没有匹配的绑定节点", MessageType.Info);
+        }
         if (uiList != null)
         {
             GUILayout.BeginVertical();
             for (int i = 0; i < uiList.Count; i++)
             {
                 UIBindComponentData item = uiList[i];
+                if (!MatchesBinding(item, query)) continue;
                 GUILayout.BeginHorizontal();
 
                 //变量的id
@@ -184,6 +233,7 @@ public class UIBinderInspector : Editor
                 if (GUILayout.Button("-", GUILayout.MinWidth(25), GUILayout.Width(50)))
                 {
                     uiList.RemoveAt(i);
+                    i--;
                     EditorUtility.SetDirty(_target);
                 }
                 GUILayout.EndHorizontal();
@@ -197,6 +247,7 @@ public class UIBinderInspector : Editor
             if (uiList == null)
             {
                 uiList = new List<UIBindComponentData>();
+                _target.uiList = uiList;
             }
             UIBindComponentData item = new UIBindComponentData();
             item.id = maxId + 1;
