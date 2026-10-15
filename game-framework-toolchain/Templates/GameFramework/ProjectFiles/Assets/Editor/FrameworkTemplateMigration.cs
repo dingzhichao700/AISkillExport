@@ -147,9 +147,14 @@ public static class FrameworkTemplateMigration {
             button.GetComponent<RectTransform>().anchoredPosition = new Vector2(0, -60);
             button.GetComponent<Image>().color = new Color(0.15f, 0.35f, 0.55f);
             CreateText(button.transform, "Text", "Return to login", Vector2.zero);
+            var gmButton = UnityEngine.Object.Instantiate(button, root.transform);
+            gmButton.name = "btnGM";
+            gmButton.GetComponent<RectTransform>().anchoredPosition = new Vector2(0, -170);
+            gmButton.GetComponentInChildren<TextMeshProUGUI>().text = "GM";
             UIBinder binder = root.GetComponent<UIBinder>();
             binder.csharpAssetPath = "Assets/Scripts/csharp/main/MainPanel.cs";
             binder.uiList.Add(new UIBindComponentData { id = 1, uiName = "btnBack", uiTypeName = "Button", go = button });
+            binder.uiList.Add(new UIBindComponentData { id = 2, uiName = "btnGM", uiTypeName = "Button", go = gmButton });
             binder.RefreshScriptBinding();
             PrefabUtility.SaveAsPrefabAsset(root, path);
         } finally {

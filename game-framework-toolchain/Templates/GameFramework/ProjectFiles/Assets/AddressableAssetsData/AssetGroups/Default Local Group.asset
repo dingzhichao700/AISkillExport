@@ -28,6 +28,18 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: f86794daa5fe57343acddfb59fdab61a
+    m_Address: Assets/Prefab/default/gm/GmPanel.prefab
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - main-content
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 87d4635cf23647709829f15f57b7f514
+    m_Address: Assets/Art/atlas/default/gm.png
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - main-content
+    FlaggedDuringContentUpdateRestriction: 0
   m_ReadOnly: 0
   m_Settings: {fileID: 11400000, guid: b1a0955dcd22fb34c834009bf4768d90, type: 2}
   m_SchemaSet:

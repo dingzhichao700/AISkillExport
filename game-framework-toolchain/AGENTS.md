@@ -73,7 +73,7 @@ game-framework-toolchain/
 - 内嵌 `Packages/com.code-philosophy.luban`。
 - TMP Essentials、DOTween、TexturePacker importer 和必要 Editor 工具。
 - `GameEntrance`、`UIEditor`。
-- Opening、Login、Option、Setting、最小 Main 与公共 UI baseline。
+- Opening、Login、Option、Setting、最小 Main、GM 开发调试模块与公共 UI baseline。GM 代码属于 Main，面板及专属图集属于 default Group；详见 [GM开发调试模块规范](docs/GM开发调试模块规范.md)。
 - Addressables 设置及与所选平台策略一致的组定义；平台配置及验收边界见模板与导出规范。
 
 模板禁止包含 `Library`、`Temp`、`Logs`、`UserSettings`、`.vs`、工程文件，以及 bag、bagcartoon、baglegendary、shop、AIUI 临时生成器等实验内容。

@@ -44,6 +44,11 @@ foreach ($path in @(
     'Assets\Scripts\csharp\foundation\core\RookieEngine.cs',
     'Assets\Scripts\csharp\login\config\CfgManager.cs',
     'Assets\Scripts\csharp\login\opening\OpeningPanel.cs',
+    'Assets\Scripts\csharp\main\gm\GMControl.cs',
+    'Assets\Scripts\csharp\main\gm\view\GmPanel.cs',
+    'Assets\Scripts\csharp\main\gm\view\GMItem.cs',
+    'Assets\Prefab\default\gm\GmPanel.prefab',
+    'Assets\Art\atlas\default\gm.png',
     'Assets\Editor\GameFrameworkExportPipeline.cs',
     'Assets\Editor\uiComponent\UIBinderInspector.cs',
     'Assets\AddressableAssetsData\AddressableAssetSettings.asset',
@@ -228,6 +233,12 @@ foreach ($buildEntry in @('Assets/Editor/addressable/AddressablesAutoBuilder.cs'
     if ($buildCount -eq 0 -or $gateCount -ne $buildCount) {
         $errors.Add("Every content build must validate stage dependencies first: $buildEntry")
     }
+}
+
+try {
+    & (Join-Path $PSScriptRoot 'Test-GMBaseline.ps1') -ProjectFiles $ProjectFiles
+} catch {
+    $errors.Add("GM/configuration validation: $($_.Exception.Message)")
 }
 
 if ($errors.Count -gt 0) {

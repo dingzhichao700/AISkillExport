@@ -45,6 +45,8 @@ and include the five baseline workbooks, ConfigResource scripts/configuration,
 and the complete locked Luban generator. Run the JSON/bin generation check;
 the embedded Unity package alone is not a complete Luban development toolchain.
 
+The baseline includes the Main-owned GM development module, its default-group panel/atlas, and generic GMResource commands. Follow `docs/GM开发调试模块规范.md` when migrating or extending it.
+
 Check proportionally to the change:
 
 - the template contains `Assets`, `Packages`, `ProjectSettings`, embedded dependencies, and no external-project reference;

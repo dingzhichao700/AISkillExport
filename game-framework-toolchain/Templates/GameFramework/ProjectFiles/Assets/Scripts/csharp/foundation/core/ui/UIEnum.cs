@@ -22,6 +22,8 @@ public static class UIEnum
     public const string SCENE_PANEL = "scene/sceneBase/ScenePanel";
 
     // default
+    /**开发调试指令面板*/
+    public const string GM_PANEL = "default/gm/GmPanel";
     public const string PAUSE_PANEL = "default/mainView/PausePanel";
     public const string MAIN_PANEL = "default/mainView/MainPanel";
     public const string MAIN_TOP_VIEW = "default/mainView/MainTopPanel";
