@@ -17,6 +17,9 @@ artifacts and stop at every required approval gate.
    and current stage.
 3. Separate model-generated artifacts from deterministic post-processing.
 4. Create or update a run manifest without recording credentials.
+5. Place generated and intermediate artifacts under the target project's declared
+   work/artifact directory when one exists. Do not default large outputs to the system
+   drive when the project is on another writable drive.
 
 ## Select the workflow
 
@@ -24,6 +27,9 @@ artifacts and stop at every required approval gate.
 - For a coherent series or visible progression, read
   `references/series-asset-workflow.md` and use the concept-sheet workflow.
 - Resume from an existing approved concept or formal sheet instead of regenerating it.
+- Translate product semantics into visual language before prompting. Omit domain terms
+  that predictably imply the wrong physical object when the desired result is defined by
+  appearance alone; keep those terms in the asset contract and validation criteria.
 
 ## Use external image providers
 
@@ -53,6 +59,9 @@ For a series or progression, use these gates:
 4. Approve the final individual assets before placing them in the game project.
 
 Do not generate later stages before the current gate is explicitly approved.
+If an approved concept already has formal-source quality, report that assessment and let
+the user explicitly promote it to the formal source instead of generating a redundant
+near-duplicate.
 
 ## Process assets safely
 
@@ -77,6 +86,12 @@ Do not generate later stages before the current gate is explicitly approved.
   belongs to the current product rather than this Skill.
 - Keep source sheets, transparent sheets, final assets, and review composites separate.
 - Use deterministic scripts for extraction, segmentation, resizing, naming, and checks.
+- Before choosing production dimensions, inspect the target resolution and existing
+  comparable in-game assets. Record visible dimensions separately from transparent
+  canvas dimensions.
+- After extraction and resizing, remove isolated fragments that are not connected to the
+  intended subject, then inspect a checkerboard review composite for residual pixels and
+  cross-member contamination.
 
 ## Validate delivery
 
@@ -84,6 +99,11 @@ Verify the requested count, naming, format, dimensions, alpha channel, transpare
 corners, complete silhouettes, absence of cross-member fragments, safe padding,
 consistent viewpoint and anchor, and the intended progression. Visually inspect a
 review composite before delivery.
+
+When placing approved assets into Unity, also verify the destination taxonomy, unique
+`.meta` GUIDs, Sprite importer settings, transparent corners, and Addressables entries
+when the project loads those assets through Addressables. Do not build player content
+unless that stage is requested.
 
 For pivot-aligned series, also verify that every delivered asset records the same
 alignment mode and semantic anchor meaning, while allowing the numeric pivot to differ

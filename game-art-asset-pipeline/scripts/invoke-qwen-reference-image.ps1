@@ -13,6 +13,7 @@ param(
     [string]$OutputPath,
 
     [string]$Model = 'wan2.6-image',
+    [string]$NegativePrompt = '像素画，像素风，8-bit，16-bit，阶梯锯齿，马赛克，低分辨率，文字，水印，投影，尾焰，烟雾，场景，透视斜视角',
     [ValidateSet('1K', '2K')]
     [string]$Size = '1K',
     [switch]$ValidateOnly
@@ -84,7 +85,7 @@ $payload = @{
         )
     }
     parameters = @{
-        negative_prompt = '像素画，像素风，8-bit，16-bit，阶梯锯齿，马赛克，低分辨率，文字，水印，投影，尾焰，烟雾，场景，透视斜视角'
+        negative_prompt = $NegativePrompt
         size = $Size
         n = 1
         enable_interleave = $false

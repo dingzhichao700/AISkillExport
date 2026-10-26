@@ -86,6 +86,45 @@ Use the following selection rules when the user asks Codex to apply them:
 
 ## Size ScrollList editor previews
 
+For this project's ScrollList, preserve the fixed structure
+`list<SemanticName> → Viewport → Content → item template`.
+The root owns ScrollList and ScrollRect; do not use the root as its own viewport.
+Viewport owns Image (raycast enabled) and Mask (Show Mask Graphic disabled).
+An Image on the root is optional and requires an actual background requirement.
+Do not substitute a root-level RectMask2D for this hierarchy.
+
+Viewport stretches to all four root edges with zero offsets and top-left pivot.
+Content and the item template use top-left anchors and pivot, initially positioned
+at (0,0). Give the item an explicit size. ScrollList owns Content sizing and item
+placement; do not add LayoutGroup or ContentSizeFitter. ScrollRect must reference
+the contained Viewport and Content, enable only one scrolling axis, and ScrollList
+must reference the single item template under Content. Item UIBinder and derived
+ScrollListItem scripts are needed only when the presentation requires them.
+
+Validate hierarchy, component placement, geometry and reference targets together;
+non-null references or successful compilation alone do not establish correctness.
+Use the existing binding generator after changing exported names or component types.
+
+
+For this project's ScrollList, preserve the fixed structure
+`list<SemanticName> → Viewport → Content → item template`.
+The root owns ScrollList and ScrollRect; do not use the root as its own viewport.
+Viewport owns Image (raycast enabled) and Mask (Show Mask Graphic disabled).
+An Image on the root is optional and requires an actual background requirement.
+Do not substitute a root-level RectMask2D for this hierarchy.
+
+Viewport stretches to all four root edges with zero offsets and top-left pivot.
+Content and the item template use top-left anchors and pivot, initially positioned
+at (0,0). Give the item an explicit size. ScrollList owns Content sizing and item
+placement; do not add LayoutGroup or ContentSizeFitter. ScrollRect must reference
+the contained Viewport and Content, enable only one scrolling axis, and ScrollList
+must reference the single item template under Content. Item UIBinder and derived
+ScrollListItem scripts are needed only when the presentation requires them.
+
+Validate hierarchy, component placement, geometry and reference targets together;
+non-null references or successful compilation alone do not establish correctness.
+Use the existing binding generator after changing exported names or component types.
+
 - Keep one authoritative node assigned to `ScrollList.itemTemplate`. Treat only
   its sibling editor-preview or pool clones as a variable-size set.
 - Do not require a universal clone count such as 50 or 100. Estimate visible

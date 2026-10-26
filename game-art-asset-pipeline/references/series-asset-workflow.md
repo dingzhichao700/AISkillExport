@@ -26,6 +26,12 @@ explicitly redesigning the new subject. If text-only generation repeatedly intro
 forbidden infographic elements or an unsuitable style, stop blind retries and switch to
 that approved reference. Never use a rejected draft as the authoritative style reference.
 
+Keep the prompt visual. Translate business labels into observable traits such as shape,
+proportion, core structure, glow layers, color relationships, orientation, and motion
+cues. If a business noun repeatedly causes the provider to invent an unwanted physical
+object, omit that noun from the provider prompt while retaining it in the manifest and
+review criteria.
+
 Prompt requirements:
 
 - show exactly the requested number of members;
@@ -46,6 +52,10 @@ redesigning the approved progression.
 
 Stop for approval before splitting.
 
+If the approved concept already satisfies the intended final rendering quality, it may
+be designated as the formal source with explicit user approval. Do not spend another
+provider request merely to reproduce it without a material improvement target.
+
 ## 4. Convert to production assets
 
 1. Detect the actual temporary background from canvas edges.
@@ -56,6 +66,8 @@ Stop for approval before splitting.
 6. Align all members to the declared center axis and anchor.
 7. Export individual transparent PNGs at the production canvas size.
 8. Produce a checkerboard review composite without altering the individual files.
+9. Remove disconnected pixel islands and neighboring fragments while preserving the
+   connected subject and its legitimate soft glow.
 
 ## 5. Validate
 

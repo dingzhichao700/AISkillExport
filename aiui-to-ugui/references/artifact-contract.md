@@ -329,6 +329,8 @@ Use lower camel case in the form `<component-prefix><SemanticName>`:
 | `Image` | `img` | `imgBg`, `imgBgTitle`, `imgQuality`, `imgItem` |
 | TextMeshPro text | `txt` | `txtTitle`, `txtLabel` |
 | Button | `btn` | `btnAll`, `btnEquipment`, `btnClose` |
+| `ScrollList` | `list` | `listPicker`, `listItem` |
+| `ScrollList` | `list` | `listPicker`, `listItem` |
 | Semantic grid container | `grid` | `gridInventory` |
 | Repeated item root | semantic lower camel case plus stable indices | `itemSlot_0_0` |
 
