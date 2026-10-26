@@ -22,11 +22,16 @@ public partial class Tables
     /// 设置选项表
     /// </summary>
     public cfgObj.SettingOptionObj SettingOptionObj {get; }
+    /// <summary>
+    /// 通用常量配置表
+    /// </summary>
+    public cfgObj.ConfigValueObj ConfigValueObj {get; }
 
     public Tables(System.Func<string, JSONNode> loader)
     {
         GmObj = new cfgObj.GmObj(loader("cfgobj_gmobj"));
         SettingOptionObj = new cfgObj.SettingOptionObj(loader("cfgobj_settingoptionobj"));
+        ConfigValueObj = new cfgObj.ConfigValueObj(loader("cfgobj_configvalueobj"));
         ResolveRef();
     }
     
@@ -34,6 +39,7 @@ public partial class Tables
     {
         GmObj.ResolveRef(this);
         SettingOptionObj.ResolveRef(this);
+        ConfigValueObj.ResolveRef(this);
     }
 }
 

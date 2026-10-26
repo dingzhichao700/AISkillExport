@@ -27,7 +27,8 @@ public static class ResourceConst
     public static readonly List<string> ALL_CONFIG_LIST = new List<string>
     {
         "cfgobj_gmobj",
-        "cfgobj_settingoptionobj"
+        "cfgobj_settingoptionobj",
+        "cfgobj_configvalueobj"
     };
 
     public static readonly List<string> ALL_MATERIAL_LIST = new List<string>

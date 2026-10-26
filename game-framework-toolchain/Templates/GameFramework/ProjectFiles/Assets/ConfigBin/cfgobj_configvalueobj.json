@@ -1,0 +1,50 @@
+[
+  {
+    "id": 1,
+    "type": 0,
+    "valueType": 1,
+    "content": "123"
+  },
+  {
+    "id": 2,
+    "type": 0,
+    "valueType": 1,
+    "content": "2200000000"
+  },
+  {
+    "id": 3,
+    "type": 0,
+    "valueType": 2,
+    "content": "1.5"
+  },
+  {
+    "id": 4,
+    "type": 0,
+    "valueType": 2,
+    "content": "2200000000.000"
+  },
+  {
+    "id": 5,
+    "type": 0,
+    "valueType": 0,
+    "content": "aaabbbcccdddeeefff"
+  },
+  {
+    "id": 6,
+    "type": 1,
+    "valueType": 1,
+    "content": "123,456,789,101,202,303"
+  },
+  {
+    "id": 7,
+    "type": 1,
+    "valueType": 0,
+    "content": "hahaha,wawa,heiheihei"
+  },
+  {
+    "id": 8,
+    "type": 2,
+    "valueType": 0,
+    "content": "1:111,2:222,a:AAaa,b:BBbb,c:C_C-c_c"
+  }
+]

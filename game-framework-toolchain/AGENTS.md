@@ -2,6 +2,10 @@
 
 本仓库是一套可复用的 Unity Game Framework 模板与导出工具。它不包含供日常开发直接打开的工程；`Templates/GameFramework/ProjectFiles` 是复制源，复制后形成可打开的 Unity 工程。
 
+## 每项任务的规范读取入口
+
+开始任务先读取本文件和 [规范索引](docs/README.md)，按任务范围读取全部相关规范及引用；范围扩大时补读。涉及功能、道具、常量、GM、设置表时，读取对应表规范；项目实例还须读取专属约定。新增、移动或修订规范时同步索引和引用，并校验链接。同一规则只维护一处，不将讨论记录或项目业务数据复制为通用规则。
+
 ## 权威顺序与文档索引
 
 发生冲突时依次以：用户本次明确指令 → 目标工程 `AGENTS.md` → 专项规范 → Skill 默认规则 → 示例与历史记录为准。
@@ -67,7 +71,7 @@ game-framework-toolchain/
 
 ## 模板必须包含
 
-- 完整 Luban 开发工具链：`RootFiles/文档/配置表` 中五张基础表、`ProjectFiles/ConfigResource` 和 `ProjectFiles/Tools/Luban`，详见 [配置表工具链规范](docs/配置表工具链规范.md)。导出工程的规范统一放入 `文档/开发规范`，不再生成根目录 `docs`。
+- 完整 Luban 开发工具链：`RootFiles/文档/配置表` 中六张基础表、`ProjectFiles/ConfigResource` 和 `ProjectFiles/Tools/Luban`，详见 [配置表工具链规范](docs/配置表工具链规范.md)。导出工程的规范统一放入 `文档/规范/通用规范`，不再生成根目录 `docs`。
 
 - 完整 `Assets`、`Packages`、`ProjectSettings`。
 - 内嵌 `Packages/com.code-philosophy.luban`。
@@ -97,6 +101,10 @@ powershell -ExecutionPolicy Bypass -File Tools/Generate-GameFrameworkProject.ps1
 - 导出目标只有 `{OutputRoot}/{ProjectName}`，staging 不出现在目标目录。
 
 ## 最小验证
+
+序列帧源动画交付遵循 [docs/序列帧动画源资源交付规范.md](docs/序列帧动画源资源交付规范.md)。模板内 `ProjectFiles/Tools/AnimationSource` 提供源资源导出及校验；源 PNG 保留完整画布，源配置与运行时图集 JSON 分开，辅助文件不进入交付根目录。
+
+仅涉及帧动画生成与源资源导出工具时，验收限于该工具回归及源资源检查，不执行下述完整模板检查、Unity 编译或任何打包，也不将这些列为交付待办。
 
 修改模板或导出器后运行：
 

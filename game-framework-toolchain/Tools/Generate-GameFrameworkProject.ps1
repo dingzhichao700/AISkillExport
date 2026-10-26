@@ -167,11 +167,27 @@ function Invoke-UnityBatch([string]$ProjectPath, [string]$LogFile, [string]$Exec
 }
 
 function Update-GeneratedProject([string]$Root, [string]$ProjectPath) {
-    $agentText = [IO.File]::ReadAllText((Join-Path $RepoRoot 'AGENTS.md')).Replace('(docs/', '(文档/开发规范/')
+    $agentText = [IO.File]::ReadAllText((Join-Path $RepoRoot 'AGENTS.md')).Replace('(docs/README.md)', '(文档/规范/README.md)').Replace('(docs/', '(文档/规范/通用规范/')
     [IO.File]::WriteAllText((Join-Path $Root 'AGENTS.md'), $agentText, [Text.UTF8Encoding]::new($false))
     $docsSource = Join-Path $RepoRoot 'docs'
     if (Test-Path -LiteralPath $docsSource) {
-        Copy-Tree $docsSource (Join-Path $Root '文档\开发规范')
+        Copy-Tree $docsSource (Join-Path $Root '文档\规范\通用规范')
+        $generalIndex = Join-Path $Root '文档\规范\通用规范\README.md'
+        $indexText = [IO.File]::ReadAllText($generalIndex).Replace('(../AGENTS.md)', '(../../../AGENTS.md)')
+        [IO.File]::WriteAllText($generalIndex, $indexText, [Text.UTF8Encoding]::new($false))
+        Ensure-Directory (Join-Path $Root '文档\规范\专属规范')
+        $rulesIndex = @'
+# 项目规范索引
+
+每项任务先读取 [AGENTS.md](../../AGENTS.md)，再按范围读取全部相关通用规范与项目专属约定。
+
+- [通用规范索引](通用规范/README.md)：跨项目开发与配置规则。
+- [专属规范目录](专属规范/)：本项目玩法、界面、美术及业务约定。
+- [原始配置表](../配置表/)：源表保持原路径。
+
+同一规则只维护一处。新增、移动或修订文档时同步索引、入口和引用，并检查链接。配置契约不等于功能已实现。
+'@
+        [IO.File]::WriteAllText((Join-Path $Root '文档\规范\README.md'), $rulesIndex, [Text.UTF8Encoding]::new($false))
     }
     $gitignore = Join-Path $PSScriptRoot 'unity-project.gitignore'
     if (Test-Path -LiteralPath $gitignore) {
@@ -194,7 +210,7 @@ Game Framework sample generated from the self-contained `game-framework-toolchai
 
 - Open in Unity Hub: `Project/`
 - Project rules: `AGENTS.md`
-- Directory rules: `文档/开发规范/目录与分包原则.md`
+- Directory rules: `文档/规范/通用规范/目录与分包原则.md`
 - Generated: $generatedAt
 
 Addressables are prepared during export. If runtime loading fails, run **Tools -> Addressables -> Build All**.
@@ -232,11 +248,11 @@ function Assert-ExportComplete([string]$ProjectPath) {
         if (!(Test-Path -LiteralPath (Join-Path $ProjectPath $required))) { throw "Missing exported Luban file: $required" }
     }
     $exportRoot = Split-Path $ProjectPath -Parent
-    foreach ($required in @('文档\开发规范\README.md', '文档\配置表\__beans__.xlsx', '文档\配置表\__enums__.xlsx', '文档\配置表\__tables__.xlsx', '文档\配置表\GMResource.xlsx', '文档\配置表\SettingOptionResource.xlsx')) {
+    foreach ($required in @('文档\规范\README.md', '文档\规范\专属规范', '文档\规范\通用规范\README.md', '文档\配置表\__beans__.xlsx', '文档\配置表\__enums__.xlsx', '文档\配置表\__tables__.xlsx', '文档\配置表\GMResource.xlsx', '文档\配置表\SettingOptionResource.xlsx', '文档\配置表\ConfigValueResource.xlsx')) {
         if (!(Test-Path -LiteralPath (Join-Path $exportRoot $required))) { throw "Missing exported document: $required" }
     }
     if (Test-Path -LiteralPath (Join-Path $exportRoot 'docs')) {
-        throw 'Generated project must use 文档/开发规范 instead of root docs.'
+        throw 'Generated project must use 文档/规范 instead of root docs.'
     }
     $marker = Join-Path $ProjectPath 'Assets\AddressableAssetsData\.export-baseline-complete.txt'
     if (-not ((Test-Path -LiteralPath $marker) -and ((Get-Content -LiteralPath $marker -Raw) -match '^ok\b'))) {

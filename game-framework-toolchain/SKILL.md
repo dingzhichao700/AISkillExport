@@ -40,8 +40,8 @@ When the user says **标准化回写**:
 ## Validate outputs
 
 For configuration tooling and export layout, read `docs/配置表工具链规范.md`.
-Export `RootFiles` beside `Project`, map repository docs to `文档/开发规范`,
-and include the five baseline workbooks, ConfigResource scripts/configuration,
+Export `RootFiles` beside `Project`, map repository docs to `文档/规范/通用规范`,
+and include the six baseline workbooks, ConfigResource scripts/configuration,
 and the complete locked Luban generator. Run the JSON/bin generation check;
 the embedded Unity package alone is not a complete Luban development toolchain.
 
@@ -58,9 +58,32 @@ Check proportionally to the change:
 - the delivered `Library` retains `com.unity.addressables` but excludes regenerable import and compilation caches;
 - owned temporary staging directories are cleaned after completion.
 
-## Finish
+## Animation source delivery
 
-Report changed source files, generated project path if any, validation performed, pending Unity-only checks, and uncommitted state.
+This workflow ends at frame-animation generation, source PNG/config export and
+source-delivery validation. Do not run Unity compilation, Addressables builds,
+atlas packing, player builds or full-project validation for this workflow.
+These are not pending checks or prerequisites for animation delivery. For changes
+limited to this tool, run `Tools/Tests/test_animation_source.py` and inspect the
+source output; the sample-project generation requirements above do not apply.
+
+For character actions, effects, or other frame-sequence source delivery, read
+[docs/序列帧动画源资源交付规范.md](docs/序列帧动画源资源交付规范.md).
+Use the template's `Tools/AnimationSource/animation_source.py export` and `validate`
+commands after the producing skill has approved PNGs. Require confirmed duration
+and original-canvas pivot; never infer them from frame count or example values.
+Each animation contains only `animation.json` and consecutive `001.png` etc. in
+one directory. Keep full aligned canvases and Alpha; do not apply scale to PNGs.
+Keep previews and reports outside the delivery root. Validate structure and pixels,
+then visually review alignment, background contamination and clipping. This step
+does not pack atlases or implement runtime behavior. Check the selected packer's
+pivot convention before integration; the documented downstream contract is a target.
+
+## Delivery report
+
+Report changed source files, output path, relevant validation and uncommitted state.
+Report pending Unity-only checks only for Unity project work, never for the
+standalone frame-animation generation/export workflow.
 
 ## Build and release existing projects
 

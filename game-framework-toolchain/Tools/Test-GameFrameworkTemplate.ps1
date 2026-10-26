@@ -1,4 +1,4 @@
-﻿#Requires -Version 5.1
+#Requires -Version 5.1
 param([string]$TemplateRoot)
 
 $ErrorActionPreference = 'Stop'
@@ -13,8 +13,11 @@ $errors = [Collections.Generic.List[string]]::new()
 foreach ($relative in @('ConfigResource\luban.conf', 'ConfigResource\Defines\builtin.xml', 'ConfigResource\gen_json.bat', 'ConfigResource\gen_bin.bat', 'ConfigResource\gen.sh', 'Tools\Luban\Luban.dll', 'Tools\Luban\Luban.runtimeconfig.json', 'Tools\Luban.lock.json')) {
     if (!(Test-Path -LiteralPath (Join-Path $ProjectFiles $relative))) { $errors.Add("Missing Luban tooling: $relative") }
 }
-foreach ($name in @('__beans__', '__enums__', '__tables__', 'GMResource', 'SettingOptionResource')) {
+foreach ($name in @('__beans__', '__enums__', '__tables__', 'GMResource', 'SettingOptionResource', 'ConfigValueResource')) {
     if (!(Test-Path -LiteralPath (Join-Path $TemplateRoot "RootFiles\文档\配置表\$name.xlsx"))) { $errors.Add("Missing source workbook: $name") }
+}
+foreach ($required in @('Assets/Scripts/csharp/login/config/helper/ConfigValueHelper.cs', 'Assets/Scripts/csharp/login/cfg/resource/ConfigValueResource.cs', 'Assets/ConfigBin/cfgobj_configvalueobj.json')) {
+    if (!(Test-Path -LiteralPath (Join-Path $ProjectFiles $required))) { $errors.Add("Missing constant configuration baseline: $required") }
 }
 $lockPath = Join-Path $ProjectFiles 'Tools\Luban.lock.json'
 if (Test-Path -LiteralPath $lockPath) {
@@ -239,6 +242,12 @@ try {
     & (Join-Path $PSScriptRoot 'Test-GMBaseline.ps1') -ProjectFiles $ProjectFiles
 } catch {
     $errors.Add("GM/configuration validation: $($_.Exception.Message)")
+}
+
+foreach ($animationSourceFile in @('Tools/AnimationSource/animation_source.py', 'Tools/AnimationSource/requirements.txt')) {
+    if (-not (Test-Path -LiteralPath (Join-Path $ProjectFiles $animationSourceFile) -PathType Leaf)) {
+        $errors.Add("Missing animation source delivery tool: $animationSourceFile")
+    }
 }
 
 if ($errors.Count -gt 0) {
