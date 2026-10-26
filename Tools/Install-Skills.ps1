@@ -15,7 +15,9 @@ $skillNames = @(
     "game-art-asset-pipeline",
     "game-feature-logic",
     "game-framework-toolchain",
-    "character-animation-pipeline"
+    "game-build-release",
+    "character-animation-pipeline",
+    "frame-animation-packer"
 )
 
 New-Item -ItemType Directory -Path $TargetRoot -Force | Out-Null
