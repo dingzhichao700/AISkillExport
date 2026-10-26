@@ -1,0 +1,6 @@
+tool/bin/
+tool/obj/
+tool/.vs/
+*.user
+*.suo
+runtime/localStorage.json

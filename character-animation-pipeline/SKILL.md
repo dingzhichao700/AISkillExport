@@ -38,7 +38,8 @@ No default GIF, archive, full native-rate PNG delivery, or engine integration.
    loop, inspect movement, select a complete semantic cycle, and present a repeated
    MP4 directly. Do not require a separate raw-video approval first. One-shot actions
    retain anticipation, action and recovery; present them without artificial looping.
-3. **Deliver the complete transparent sequence after video approval.** Internally
+3. **Deliver the complete transparent sequence after video approval** (for a directional
+   set, after all requested directions pass; see below). Internally
    inspect every output's silhouette and transparency on checker/dark backgrounds,
    then deliver all requested frames with timing and a static overview. Do not add a
    three-sample approval gate. Failed extraction remains unfinished, not an opaque
@@ -48,6 +49,17 @@ Split review only when no useful cycle exists, trimming would discard meaningful
 action, or a proposed repair changes motion. Explain the concrete issue. Default:
 no RIFE, interpolation, reverse playback, crossfade, retiming, or synthetic frame repair.
 Approval of a source video is not permission to hide an altered motion sequence.
+
+## Directional sets
+
+For a multi-direction action, review static direction references together before video
+production: identity, proportions, camera elevation and relative scale. Use the project's
+native-size scene standard when supplied; a magnified sheet alone does not prove scale.
+Direction count and mirror mapping come from the project, not this skill's examples.
+Generate and review one direction's video at a time, then export the set after all
+requested directions pass, unless the user explicitly requests a partial export.
+Repair only affected directions; retain other approved versions. Read
+[processing.md](references/processing.md) for cross-direction scale and pivot review.
 
 ## Video generation and recovery
 
@@ -91,9 +103,18 @@ can look less smooth than the approved video, and dense rendering isn't reconstr
 
 ## Delivery and evidence
 
-Provide an absolute directory path AND clickable link to frames/, plus inline overview.
-State frame count, canvas, order and frame/cycle duration. Keep animation.json beside
-frames/; include source frame mapping, source hash, geometry and extraction settings.
+Read [delivery.md](references/delivery.md) before export. Deliver each action + direction
+as an independent directory such as `Fighter/Fly_Down/`, containing only `animation.json`
+and `001.png...NNN.png` at the same level (no `frames/` subdirectory).
+For an explicitly requested PNG-only stage, keep the same directories and defer JSON;
+see the staged-delivery rules in delivery.md. This is not yet a packer-ready package.
+The delivery JSON contains only duration (integer milliseconds), scale (downstream
+percentage, default 100), and pivot (normalized on the untrimmed canvas, bottom-left
+origin, X right, Y up). Never reuse the extraction resize factor as delivery scale.
+Provide an absolute directory path AND clickable link to each animation directory,
+plus inline overview. State frame count, canvas, order and frame/cycle duration.
+Pass a separate `--evidence-out` outside the whole delivery root for overview and
+provenance (source mapping/hash, geometry, extraction settings and loop intent).
 Use only approved content, no placeholder frames. Save failures and trials in work/.
 The validated history and its limitations are in [evidence.md](references/evidence.md).
 

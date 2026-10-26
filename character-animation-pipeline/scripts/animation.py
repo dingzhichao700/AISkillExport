@@ -169,6 +169,15 @@ def export(a):
     meta=probe(a.video);validate_range(a.start,a.length,meta['count'])
     indices=sample_indices(a.start,a.length,a.count,not a.one_shot)
     profile=read(a.profile);out=Path(a.out)
+    evidence=Path(a.evidence_out)
+    if evidence.resolve()==out.resolve() or out.resolve() in evidence.resolve().parents or evidence.resolve() in out.resolve().parents:
+        raise ValueError('Evidence and delivery directories must be separate, non-nested paths')
+    if evidence.exists(): raise ValueError('Evidence directory exists; use a new directory')
+    duration=round(1000*a.length/meta['fps'])
+    if duration<a.count: raise ValueError('Duration must allow at least 1 ms per frame')
+    pack_scale=getattr(a,'pack_scale',100)
+    if not math.isfinite(pack_scale) or not 10<=pack_scale<=200: raise ValueError('Pack scale must be 10..200 percent')
+    digits=max(3,len(str(a.count)))
     if out.exists(): raise ValueError('Export directory exists; use a new output directory')
     if a.direction not in profile['directions']: raise ValueError('Direction missing from geometry profile')
     cap=cv2.VideoCapture(str(a.video));rendered=[];records=[]
@@ -186,11 +195,12 @@ def export(a):
             if sum(area>2 for area in stats[1:,cv2.CC_STAT_AREA]) != 1:
                 raise ValueError('Disconnected foreground: inspect accessories/artifacts')
             rendered.append(dst)
-            records.append({'file':f'frames/{j+1:02d}.png','source_frame':i+1,
-                'duration_ms':1000*a.length/meta['fps']/a.count,'visible_bbox':dst.getbbox()})
+            records.append({'file':f'{j+1:0{digits}d}.png','source_frame':i+1,
+                'duration_ms':duration*(j+1)//a.count-duration*j//a.count,'visible_bbox':dst.getbbox()})
     finally:cap.release()
     # Write only after every frame passes. No partially validated asset set.
-    (out/'frames').mkdir(parents=True)
+    out.mkdir(parents=True)
+    evidence.mkdir(parents=True)
     cw,ch=rendered[0].size;cols=min(4,a.count);rows=math.ceil(a.count/cols)
     cellw,cellh=cw*2+24,ch*2+32
     board=Image.new('RGB',(cols*cellw,rows*cellh),'#eeeeee');draw=ImageDraw.Draw(board)
@@ -202,8 +212,13 @@ def export(a):
                 if (x//12+y//12)%2:d.rectangle((x,y,x+11,y+11),fill='#cccccc')
         bg.alpha_composite(large);x=j%cols*cellw;y=j//cols*cellh
         board.paste(bg.convert('RGB'),(x+12,y+24));draw.text((x+12,y+6),f'{j+1:02d}',fill='black')
-    board.save(out/'overview.png')
-    write(out/'animation.json',{'action':a.action,'direction':a.direction,'loop':not a.one_shot,
+    board.save(evidence/'overview.png')
+    # Geometry uses top-left pixel coordinates; delivery uses bottom-left normalized coordinates.
+    px,py=profile['pivot']
+    write(out/'animation.json',{'duration':duration,'scale':pack_scale,
+        'pivot':{'x':px/cw,'y':1-py/ch}})
+    write(evidence/'provenance.json',{'action':a.action,'direction':a.direction,'loop':not a.one_shot,
+        'delivery_directory':str(out.resolve()),'duration':duration,
         'source_sha256':hashlib.sha256(Path(a.video).read_bytes()).hexdigest(),'source_fps':meta['fps'],
         'start':a.start,'length':a.length,'seconds':a.length/meta['fps'],'count':a.count,
         'geometry':profile,'scale':scale,'matte':a.matte,'key':a.key if a.matte=='chroma' else None,
@@ -221,6 +236,8 @@ def main():
     q=sub.add_parser('export');q.add_argument('--video',required=True);q.add_argument('--start',type=int,required=True)
     q.add_argument('--length',type=int,required=True);q.add_argument('--count',type=int,default=8)
     q.add_argument('--direction',required=True);q.add_argument('--profile',required=True);q.add_argument('--out',required=True)
+    q.add_argument('--evidence-out',required=True,help='New evidence directory outside the delivery root')
+    q.add_argument('--pack-scale',type=float,default=100,help='Downstream percentage; does not resize exported PNGs')
     q.add_argument('--action',default='unspecified');q.add_argument('--one-shot',action='store_true')
     q.add_argument('--matte',choices=['warm-gray','chroma','masks'],required=True)
     q.add_argument('--key',default='FF00FF');q.add_argument('--tolerance',type=float,default=65);q.add_argument('--masks-dir')

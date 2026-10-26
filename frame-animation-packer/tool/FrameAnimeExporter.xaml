@@ -1,0 +1,98 @@
+<Window x:Class="FrameAnimeExportor.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:MyNamespace="clr-namespace:FrameAnimeExportor"
+        xmlns:local="clr-namespace:FrameAnimeExportor"
+        mc:Ignorable="d"
+        Title="帧动画导出工具" Icon="Assets/frame-animation.ico" Height="720" Width="1024">
+    <Window.Resources>
+    </Window.Resources>
+    <Grid ShowGridLines="True" SizeChanged="Grid_SizeChanged">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="150"/>
+            <RowDefinition />
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0" Background="#FFF4F4F4" Margin="0,0,0,0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="30"/>
+                <RowDefinition Height="30"/>
+                <RowDefinition Height="30"/>
+                <RowDefinition Height="30"/>
+                <RowDefinition Height="30"/>
+            </Grid.RowDefinitions>
+            <StackPanel Grid.Row="0" Orientation="Horizontal" HorizontalAlignment="Left" Height="25">
+                <Button x:Name="btnTexturePacker" Content="选择TP工具" Width="80" Click="OnSetTexturePackerPath"></Button>
+                <TextBlock x:Name="txtTexturePacker" Text="TexturePacker路径："  Margin="5,4,0,3" FontSize="14" HorizontalAlignment="Left" VerticalAlignment="Center" Foreground="Black"></TextBlock>
+                <Button x:Name="btnExploreToTexturePacker" Content="..." Width="30" Click="btnExploreToTexturePackerHandler" Margin="20,0,0,0"></Button>
+            </StackPanel>
+            <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Left" Height="25">
+                <Button x:Name="btnChooseOutput" Content="选择输出路径" Width="80" Click="OnSetOutputPath"></Button>
+                <TextBlock x:Name="txtOutputPath" Text="输出路径："  Margin="5,0,0,0" FontSize="14" HorizontalAlignment="Left" VerticalAlignment="Center"></TextBlock>
+                <Button x:Name="btnExploreToOutput" Content="..." Width="30" Click="btnExploreToOutputHandler" Margin="20,0,0,0"></Button>
+            </StackPanel>
+            <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Left" Height="25">
+                <Button x:Name="btnImport" Content="选择序列帧" Width="80" Click="OnImportFrames"></Button>
+                <TextBlock x:Name="txtInputPath" Text="序列帧路径："  Margin="5,0,0,0" FontSize="14" HorizontalAlignment="Left" VerticalAlignment="Center"></TextBlock>
+                <Button x:Name="btnExploreToFrames" Content="..." Width="30" Click="btnExploreToFramesHandler" Margin="20,0,0,0"></Button>
+            </StackPanel>
+            <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Left">
+                <TextBlock Text="整体缩放：" FontSize="14" Width="80" VerticalAlignment="Center" HorizontalAlignment="Right" />
+                <TextBox x:Name="txtScale" Text="1" Width="35" VerticalAlignment="Center" Background="#FFB4B4B4" FontSize="14" PreviewTextInput="PreviewTextInput" KeyUp="txtScale_KeyUp"/>
+                <Button x:Name="btnReimport" Content="重新导入" Margin="5,0,0,0" Width="80" Click="btnReimport_Click"  Background="{StaticResource PresentColor_2}"></Button>
+            </StackPanel>
+            <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Left" Height="25">
+                <Button x:Name="btnExport" Content="导出" Width="80" Click="btnExport_Click"  Background="{StaticResource PresentColor_1}"></Button>
+            </StackPanel>
+        </Grid>
+        <Grid x:Name="gridRow2"  Grid.Row="1" Margin="0,0,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="180"/>
+                <ColumnDefinition/>
+            </Grid.ColumnDefinitions>
+
+            <StackPanel Grid.Column="0" Orientation="Vertical" VerticalAlignment="Top" Grid.ColumnSpan="2">
+                <StackPanel Orientation="Horizontal" Margin="0,5" HorizontalAlignment="Left">
+                    <TextBlock Text="播放时长：" FontSize="14" Width="80" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                    <TextBox x:Name="txtDuration" Text="2000" Width="100" Background="#FFB4B4B4" FontSize="14" PreviewTextInput="PreviewTextInput" KeyUp="txtDuration_KeyUp" Margin="0" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
+                    <TextBlock Text="AnchorX：" FontSize="14" Width="80" VerticalAlignment="Center" HorizontalAlignment="Right" />
+                    <Slider x:Name="sliderAnchorX" Width="65" Thumb.DragDelta="sliderAnchorX_DragDelta"  Maximum="1" SmallChange="0.01"/>
+                    <TextBox x:Name="txtAnchorX" Text="0" Width="35" Background="#FFB4B4B4" FontSize="14" PreviewTextInput="PreviewTextInput" KeyUp="txtAnchorX_KeyUp"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" >
+                    <TextBlock Text="AnchorY：" FontSize="14" Width="80" VerticalAlignment="Center" HorizontalAlignment="Right" />
+                    <Slider x:Name="sliderAnchorY" Width="65" Thumb.DragDelta="sliderAnchorY_DragDelta" Maximum="1" SmallChange="0.01"/>
+                    <TextBox x:Name="txtAnchorY" Text="0" Width="35" Background="#FFB4B4B4" FontSize="14" PreviewTextInput="PreviewTextInput" KeyUp="txtAnchorY_KeyUp"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Height="50" VerticalAlignment="Bottom">
+                    <Button x:Name="btnPlay" Content="播放" Width="80" Click="btnPlay_Click"/>
+                    <StackPanel Orientation="Vertical" VerticalAlignment="Center" Margin="5,0,0,0">
+                        <CheckBox x:Name="checkboxLoop" Content="循环播放" FontSize="14" Height="20" HorizontalAlignment="Left" VerticalAlignment="Center" IsChecked="True"/>
+                        <CheckBox x:Name="checkboxFrame" Content="显示边框" FontSize="14" Height="20" HorizontalAlignment="Left" VerticalAlignment="Center" IsChecked="True"/>
+                    </StackPanel>
+                </StackPanel>
+
+            </StackPanel>
+            <StackPanel x:Name="stackScene" Grid.Column="2" MouseMove="grid_MouseMove" MouseUp="grid_MouseUp" MouseLeave="canvasFrame_MouseLeave" Orientation="Vertical" Background="#FF8E8E8E" Margin="5,0,0,0">
+                <Grid x:Name="gridTimeline" ShowGridLines="True" Background="#FFE8E8E8">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="40"/>
+                        <RowDefinition />
+                    </Grid.RowDefinitions>
+
+                    <StackPanel x:Name="stackTimeline" Grid.Row="0" Orientation="Horizontal" HorizontalAlignment="Left">
+                    </StackPanel>
+
+                    <Canvas x:Name="canvasFrame" Grid.Row="1" >
+                        <Image x:Name="imgFrame" Width="100" Height="100" Canvas.Left="0" Canvas.Top="0"/>
+                        <Image x:Name="imgAnchor" Source="images/anchor.png" Width="25" Height="25" Mouse.MouseDown="imgAnchor_MouseDown"/>
+                    </Canvas>
+                </Grid>
+            </StackPanel>
+        </Grid>
+    </Grid>
+</Window>

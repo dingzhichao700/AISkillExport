@@ -1,0 +1,7 @@
+interface:
+  display_name: "帧动画打包导出"
+  short_description: "校验并批量打包 PNG 动画序列为图集和播放配置"
+  default_prompt: "使用 $frame-animation-packer 校验并打包帧动画资源。"
+
+policy:
+  allow_implicit_invocation: true

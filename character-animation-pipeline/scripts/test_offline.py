@@ -69,14 +69,23 @@ class WorkflowTests(unittest.TestCase):
             animation.write(root/'geometry.json',profile)
             a=argparse.Namespace(video=str(root/'source.mp4'),start=1,length=30,count=8,one_shot=False,
                 direction='down-right',profile=str(root/'geometry.json'),out=str(root/'out'),matte='chroma',
-                masks_dir=None,key='FF00FF',tolerance=65,action='idle')
+                masks_dir=None,key='FF00FF',tolerance=65,action='idle',evidence_out=str(root/'evidence'),pack_scale=50)
             animation.export(a)
-            self.assertEqual(len(list((root/'out/frames').glob('*.png'))),8)
-            report=animation.read(root/'out/animation.json')
+            self.assertEqual(sorted(p.name for p in (root/'out').iterdir()),
+                [f'{i:03d}.png' for i in range(1,9)]+['animation.json'])
+            config=animation.read(root/'out/animation.json')
+            self.assertEqual(set(config),{'duration','scale','pivot'})
+            self.assertEqual(config['duration'],1000)
+            self.assertEqual(config['scale'],50)
+            self.assertAlmostEqual(config['pivot']['x'],.5)
+            self.assertAlmostEqual(config['pivot']['y'],1-108/116)
+            report=animation.read(root/'evidence/provenance.json')
+            self.assertTrue((root/'evidence/overview.png').is_file())
             self.assertAlmostEqual(sum(f['duration_ms'] for f in report['frames']),1000)
             self.assertEqual(report['geometry'],profile)
-            for path in (root/'out/frames').glob('*.png'):
+            for path in (root/'out').glob('*.png'):
                 image=Image.open(path);alpha=np.array(image)[:,:,3]
+                self.assertEqual(image.size,(80,116))  # pack_scale is metadata, not applied twice.
                 self.assertEqual(image.mode,'RGBA');self.assertFalse(alpha[0].any())
             with self.assertRaises(ValueError):animation.export(a)
             animation.cut(root/'source.mp4',1,20,root/'cycle.mp4',root/'preview.mp4',3)
