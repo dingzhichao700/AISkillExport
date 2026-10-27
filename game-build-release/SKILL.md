@@ -30,6 +30,7 @@ description: Build and release standardized Unity projects through conversation-
 - `Invoke-GameBuild.ps1` 提交到已打开的目标 Unity；同一工程只允许一个请求。按返回的 requestId 读取结果，旧结果不能作为本次成功。`-WhatIf` 预检而不提交。
 - 长时间构建分次读取结果并更新进度，不修改脚本来重复触发构建。超时不自动重提，不关闭用户启动的 Unity。
 - `scripts/validate_release.py --project <路径>` 只读验证候选、Catalog、Bundle 和包内底座标识；通过后才能切换本地指针。发布后加 `--published` 检查本地指针。
+- COS 部署读取 [COS发布流程](references/COS发布流程.md)，使用 `scripts/publish_cos.py` 按 stage → 本地发布 → activate 顺序执行，凭证留在工程外。
 - Git Pages 远端发布由当前会话按平台流程执行，脚本不暗中提交推送。检查目标分支、项目相对目录、已暂存和待推送提交，不带入其他项目修改。
 - 不自动删除历史资源，不覆盖旧版本；保留各底座的 AOT、桥接与构建记录。归档和回退见规范。
 - Skill 自检使用临时夹具及只读案例，不对真实工程提交构建请求或远端变更，除非用户要求。

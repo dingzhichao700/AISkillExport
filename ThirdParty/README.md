@@ -52,3 +52,11 @@
 - 可执行程序：`bin\ffmpeg.exe`、`bin\ffprobe.exe`；已验证版本为 9.0.1。
 - 用途：供 `character-animation-pipeline` 及项目动画脚本进行视频处理、帧检查和 PNG 序列预览合成。
 - 从 `D:\Tools\ffmpeg` 迁移，用户 PATH 已替换为 `E:\ChatGPT_Skills\ThirdParty\ffmpeg\bin`。现有应用需重启后继承新 PATH。
+
+## COSCLI
+
+- 官方 COSCLI v1.0.9 Windows：`COSCLI/coscli.exe`。
+- 来源：https://cosbrowser.cloud.tencent.com/software/coscli/coscli-windows-amd64.exe
+- SHA256：`705350f15ba90d9c0043122205b79c938e2993d36610fa82fbc3cc9012108300`。
+- 用于 game-build-release 的 COS 上传；通过显式 `-c` 读取工程外加密配置，不依赖 PATH。
+- 原 LocalAppData/GameBuildTools/COSCLI 副本保留备用，当前发布脚本使用本目录。二进制不得提交 Git。
