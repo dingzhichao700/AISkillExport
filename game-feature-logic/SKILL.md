@@ -43,6 +43,14 @@ existing architecture and reusable infrastructure.
 - Keep temporary gameplay overrides explicit. When restoring production configuration, restore dependent tests in the same change rather than deleting assertions that expose stale test assumptions.
 - Do not call a refactor complete when it only moves directories, splits files, or reduces line counts. Verify authoritative state ownership, dependency direction, presentation-reference removal, redundant-wrapper removal, compilation, and a representative runtime flow.
 
+### Validate frame-derived shadows when the feature includes them
+
+- When a project chooses shadows derived from the current animation frame, share the body's frame selection, source texture, full-canvas pivot, and trimmed-frame offset. Avoid an independent shadow clock or per-frame texture copies.
+- Verify projection around the semantic anchor after applying character mirroring. For fixed world lighting, mirror the character silhouette before projection; do not mirror the light direction with facing. Keep logical ground position distinct from visual altitude, and do not infer flight traversal or target eligibility from visual height.
+- Check body and shadow in the project's approved layers and coordinate system with camera scaling applied once. Retain the presentation while either projected bounds intersects the viewport; include shadow-only visibility in tests.
+- Tie shadow reuse and teardown to the owning unit presentation. Clear frame/texture references and transient transform state on recycle; presentation culling must not destroy the logical unit or stop its simulation.
+- Validate supported actions and directions, trimmed and mirrored anchors, applicable heights, pooling, and scene teardown. Check dependent visual attachments when altitude changes. Record automated checks separately from user visual acceptance. Keep concrete layer names, formulas, parameter defaults, table IDs, and asset-specific acceptance in project documentation.
+
 ## Make business data configurable
 
 - Identify repeated, balancing-sensitive, relational, or content-authored values that should not remain hardcoded.

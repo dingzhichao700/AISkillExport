@@ -45,6 +45,8 @@ foreach ($path in @(
     'Assets\Scenes\GameEntrance.unity',
     'Assets\Scenes\UIEditor.unity',
     'Assets\Scripts\csharp\foundation\core\RookieEngine.cs',
+    'Assets\Scripts\csharp\foundation\core\component\frameAnimation\view\FrameShadowGraphic.cs',
+    'Assets\Scripts\csharp\foundation\core\component\frameAnimation\view\FrameShadowGraphic.cs.meta',
     'Assets\Scripts\csharp\login\config\CfgManager.cs',
     'Assets\Scripts\csharp\login\opening\OpeningPanel.cs',
     'Assets\Scripts\csharp\main\gm\GMControl.cs',

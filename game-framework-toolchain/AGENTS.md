@@ -8,7 +8,7 @@
 
 ## 权威顺序与文档索引
 
-发生冲突时依次以：用户本次明确指令 → 目标工程 `AGENTS.md` → 专项规范 → Skill 默认规则 → 示例与历史记录为准。
+优先关系、条款强度、生效与替代及“进规范”的整合修订流程，以[规范管理与冲突处理规则](docs/规范管理与冲突处理规则.md)为统一入口；替换过时正文并同步引用与版本化验收，不只追加条款。
 
 - [`docs/目录与分包原则.md`](docs/目录与分包原则.md)：Assets、Group、图集和 UI Prefab 落位。
 - [`docs/模板与导出规范.md`](docs/模板与导出规范.md)：自包含模板、导出器、验证和外部依赖边界。
@@ -121,3 +121,5 @@ powershell -ExecutionPolicy Bypass -File Tools/Test-GameFrameworkTemplate.ps1
 ## 微信构建就绪基线
 
 默认模板携带锁定的微信 SDK/HybridCLR 依赖、编译宏、程序集引用和 Login/Main 热更新配置。生成器不切换 WebGL；目标切换与本机 HybridCLR 运行时安装由 game-build-release 在实际构建阶段负责。项目 AppID/CDN 留空等待工程配置；不回写案例底座版本、DLL、AOT 或 HybridCLRData。显式 Standalone 导出仍关闭微信策略。
+
+涉及当前帧阴影、投影锚点、镜像、离地位移或联合剔除时，读取[帧阴影组件规范](docs/帧阴影组件规范.md)。
