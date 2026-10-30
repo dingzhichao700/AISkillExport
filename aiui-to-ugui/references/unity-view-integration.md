@@ -60,3 +60,7 @@ ratings, or resource costs instead of relying on special font glyphs. Before UI 
 check the actual displayed text against the selected TextMeshPro font assets; complete
 missing static glyph coverage or configure an appropriate fallback rather than accepting
 missing-glyph boxes.
+
+## Viewport and safe-area integration
+
+For responsive layouts or platform overlays, follow [viewport-safe-area.md](viewport-safe-area.md) and the project’s shared adaptation service. Preserve the distinction between project design dimensions and the actual viewport.

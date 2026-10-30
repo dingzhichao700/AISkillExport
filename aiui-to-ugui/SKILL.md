@@ -15,6 +15,9 @@ design or presentation-layer delivery.
 
 ## Start a run
 
+For design dimensions, full-screen layout, safeContent, device safe areas or mini-game menu avoidance, read [references/viewport-safe-area.md](references/viewport-safe-area.md). Use project-owned dimensions and orientation; no sample resolution is a universal default.
+
+
 ### 外部图像模型登记（首次使用时强制执行）
 
 本 Skill 遇到视觉稿、独立位图或其他图像生成需求时，一律使用用户登记的

@@ -123,3 +123,5 @@ powershell -ExecutionPolicy Bypass -File Tools/Test-GameFrameworkTemplate.ps1
 默认模板携带锁定的微信 SDK/HybridCLR 依赖、编译宏、程序集引用和 Login/Main 热更新配置。生成器不切换 WebGL；目标切换与本机 HybridCLR 运行时安装由 game-build-release 在实际构建阶段负责。项目 AppID/CDN 留空等待工程配置；不回写案例底座版本、DLL、AOT 或 HybridCLRData。显式 Standalone 导出仍关闭微信策略。
 
 涉及当前帧阴影、投影锚点、镜像、离地位移或联合剔除时，读取[帧阴影组件规范](docs/帧阴影组件规范.md)。
+
+涉及设计尺寸、全屏、safeContent、安全区或平台操作按钮避让时，读取[UI视窗与安全区适配规范](docs/UI视窗与安全区适配规范.md)。项目参数不得写入通用规则；文档与模板实现迁移分开验收。

@@ -39,5 +39,5 @@ description: Build and release standardized Unity projects through conversation-
 
 - 工程生成交给 game-framework-toolchain；日常构建不重新导出或复制工程。平台协议变更同时检查生产端与客户端，不自动修改游戏玩法。
 - 兼容入口使用 `assets/Build-WeChatHotUpdate.ps1`，只转发到此 Skill。Unity 适配升级单独完成一次编译核验，不在每次构建前同步 Editor 源码。
-- 结束时分别报告构建类型、底座/内容版本、产物、本地指针、远端部署和真机验证状态。仅推送成功不能报告 Pages 已生效。
+- 结束时按通用规范“客户端底座核对与真机交付”核对测试手机底座并给出重启或换包操作；未知时明确条件。分别报告构建类型、底座/内容版本、产物、本地指针、远端部署和真机验证状态；换包生效不等于同底座热更新或缓存复用通过。
 - Skill 保存在检出仓库，通过现有安装脚本创建链接。未经请求不提交工具链 Git，不搭建 Jenkins。
