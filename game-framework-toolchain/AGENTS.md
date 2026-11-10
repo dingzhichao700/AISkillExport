@@ -63,6 +63,7 @@ game-framework-toolchain/
 | 渲染管线 | Built-in，禁止 URP |
 | 入口类 | `RookieEngine` |
 | 场景 | `GameEntrance`、`UIEditor` 两个场景 |
+| 后台运行 | Player Settings 默认启用 Run In Background，使桌面游戏失焦后继续运行 |
 | Input System | `activeInputHandler: 2`（Both） |
 | Addressables | 按生命周期和阶段分组；旧模板五组为迁移起点，微信策略另设 configData、公共字体及程序集资源组 |
 | 配置 | 模板只带通用必需配置，不迁样例业务表；微信使用 configData 独立分组并在 LoginPanel 打开时加载初始化 |

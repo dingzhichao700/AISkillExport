@@ -61,6 +61,14 @@ foreach ($path in @(
     'Assets\Art\unpack\title\title\bg_option.png'
 )) { Require-Path $path }
 
+$playerSettingsPath = Join-Path $ProjectFiles 'ProjectSettings\ProjectSettings.asset'
+if (Test-Path -LiteralPath $playerSettingsPath) {
+    $playerSettings = Get-Content -LiteralPath $playerSettingsPath -Raw
+    if ($playerSettings -cnotmatch '(?m)^  runInBackground: 1\r?$') {
+        $errors.Add('PlayerSettings must enable Run In Background by default.')
+    }
+}
+
 foreach ($forbiddenDirectory in @('Library', 'Temp', 'Logs', 'UserSettings', '.vs', 'obj')) {
     if (Test-Path -LiteralPath (Join-Path $ProjectFiles $forbiddenDirectory)) {
         $errors.Add("Forbidden generated directory: $forbiddenDirectory")
