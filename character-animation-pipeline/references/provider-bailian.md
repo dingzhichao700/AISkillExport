@@ -11,7 +11,7 @@ Use a JSON request config (UTF-8; paths relative to this JSON):
 {
   "provider": "bailian",
   "region": "beijing",
-  "key_env": "QWEN_ANI",
+  "key_file": "E:/开发凭证（勿删勿上传）/QWEN-apiKey-8436848.csv",
   "model": "wan2.6-i2v-flash",
   "reference": "reference.png",
   "prompt": "Same character, fixed camera and three-quarter front facing down-right. Walk naturally in place with small low steps, alternating legs, subtle opposing arm swings. Keep the same framing, costume and plain background. No turning, motion blur or camera movement.",
@@ -43,7 +43,7 @@ and resume poll; never guess it. Poll/download errors preserve that ID.
 Regions supported by this adapter: beijing and singapore (legacy official hosts remain
 supported as of the recorded workflow). The key must match the region. Do not probe a
 key across regions. Other endpoints/providers need an explicit adapter/config review.
-The environment variable's name is public config; its value is neither printed nor saved.
+`key_file` records only the local CSV path. Read the API Key row (first column label apiKey/API Key/key, second column opaque key), requiring exactly one unique nonempty key. Do not read environment variables, copy/upload the CSV, or print/save its values. Old key_env state resumes with the registered default CSV; task IDs remain unchanged.
 Images are encoded as quality-95 JPEG without changing dimensions; preserve original PNG.
 State records hashes and task ID, not the Base64 request, key, or signed download URL.
 Key authorization is attached only to the official API host, never the media download.

@@ -5,7 +5,7 @@
 
 .DESCRIPTION
   Copies Templates/GameFramework/ProjectFiles and never reads another Unity project.
-  Unity is used only to import, compile, initialize, and build Addressables.
+  Unity imports, compiles, builds Addressables, reopens, and validates the startup flow.
 
 .EXAMPLE
   .\Generate-GameFrameworkProject.ps1 -ProjectName GameFrameworkTest9 -OutputRoot E:\UnityTemplateTest
@@ -119,7 +119,7 @@ function Resolve-UnityEditor([string]$ExplicitPath) {
 
 function Test-LogFailure([string]$LogFile) {
     if (-not (Test-Path -LiteralPath $LogFile)) { return $true }
-    return [bool](Select-String -LiteralPath $LogFile -Pattern 'error CS\d+|Scripts have compiler errors|Compilation failed|executeMethod.*failed|batchmode.*aborted' -CaseSensitive:$false)
+    return [bool](Select-String -LiteralPath $LogFile -Pattern 'error CS\d+|Scripts have compiler errors|Compilation failed|executeMethod.*failed|batchmode.*aborted|Corrupted Library|database disk image is malformed' -CaseSensitive:$false)
 }
 
 function Wait-ProjectUnlocked([string]$ProjectPath, [int]$TimeoutSeconds = 120) {
@@ -230,6 +230,17 @@ function Install-ProjectTexturePacker([string]$ProjectPath) {
 }
 
 function Assert-ExportComplete([string]$ProjectPath) {
+    # Check actual output settings after Unity/platform tooling, not just the source template.
+    $projectSettingsCheck = Join-Path $ProjectPath 'Tools\Test-GameFrameworkProjectSettings.ps1'
+    if (-not (Test-Path -LiteralPath $projectSettingsCheck -PathType Leaf)) {
+        throw "Missing exported project settings check: $projectSettingsCheck"
+    }
+    & $projectSettingsCheck -ProjectPath $ProjectPath
+    Assert-LibraryReadyForReopen -ProjectPath $ProjectPath
+    Assert-HybridCLRDependency -ProjectPath $ProjectPath
+    if ($Platform -eq 'WeChat') {
+        & (Join-Path $ProjectPath 'Tools/Test-WeChatSdkBackground.ps1') -PackagePath (Join-Path $ProjectPath 'Packages/com.qq.weixin.minigame')
+    }
     foreach ($relative in @(
         'Assets\Scenes\GameEntrance.unity',
         'Assets\Scenes\UIEditor.unity',
@@ -273,24 +284,112 @@ function Get-DirectoryLength([string]$Path) {
     return [long]$measurement.Sum
 }
 
+function Assert-LibraryReadyForReopen([string]$ProjectPath) {
+    $library = Join-Path $ProjectPath 'Library'
+    if (Test-Path -LiteralPath (Join-Path $library 'CorruptedLibraryDetection')) {
+        throw "Unity detected an incomplete or corrupt Library: $library"
+    }
+    foreach ($metadata in @('SourceAssetDB', 'ArtifactDB', 'LibraryFormatVersion.txt')) {
+        $path = Join-Path $library $metadata
+        if (-not (Test-Path -LiteralPath $path -PathType Leaf) -or (Get-Item -LiteralPath $path).Length -eq 0) {
+            throw "Missing Library integrity metadata: $path"
+        }
+    }
+}
+
+function Assert-HybridCLRDependency([string]$ProjectPath) {
+    $packageName = 'com.code-philosophy.hybridclr'
+    $manifest = Get-Content -LiteralPath (Join-Path $ProjectPath 'Packages/manifest.json') -Raw | ConvertFrom-Json
+    $locked = Get-Content -LiteralPath (Join-Path $ProjectPath 'Packages/packages-lock.json') -Raw | ConvertFrom-Json
+    $requested = $manifest.dependencies.$packageName
+    $platformConfig = Join-Path $ProjectPath 'ProjectSettings/FrameworkPlatform.json'
+    if (Test-Path -LiteralPath $platformConfig -PathType Leaf) {
+        $configuredPlatform = (Get-Content -LiteralPath $platformConfig -Raw | ConvertFrom-Json).platform
+        # Explicit Standalone removes HybridCLR by design; a declared dependency still must validate.
+        if ($configuredPlatform -eq 'Standalone' -and -not $requested) { return }
+    }
+    $dependency = $locked.dependencies.$packageName
+    if (-not $requested -or -not $dependency -or $dependency.source -ne 'git' -or
+        $dependency.version -ne $requested -or $dependency.hash -notmatch '^[a-fA-F0-9]{40}$' -or
+        -not $requested.EndsWith('#' + $dependency.hash, [StringComparison]::OrdinalIgnoreCase)) {
+        throw 'HybridCLR manifest/lock must agree on a pinned git revision.'
+    }
+    $cache = Join-Path $ProjectPath 'Library/PackageCache'
+    $resolved = @(Get-ChildItem -LiteralPath $cache -Directory -Filter "$packageName@*" -ErrorAction SilentlyContinue | Where-Object {
+        $revision = $_.Name.Substring($packageName.Length + 1)
+        $revision -match '^[a-fA-F0-9]{7,40}$' -and $dependency.hash.StartsWith($revision, [StringComparison]::OrdinalIgnoreCase)
+    })
+    if ($resolved.Count -ne 1) { throw 'HybridCLR pinned resolved package is missing or ambiguous.' }
+    foreach ($relative in @('package.json', 'Runtime/HybridCLR.Runtime.asmdef', 'Runtime/RuntimeApi.cs', 'Editor/HybridCLR.Editor.asmdef')) {
+        $file = Join-Path $resolved[0].FullName $relative
+        if (-not (Test-Path -LiteralPath $file -PathType Leaf) -or (Get-Item -LiteralPath $file).Length -eq 0) {
+            throw "HybridCLR resolved package is incomplete: $file"
+        }
+    }
+    $package = Get-Content -LiteralPath (Join-Path $resolved[0].FullName 'package.json') -Raw | ConvertFrom-Json
+    if ($package.name -ne $packageName) { throw 'HybridCLR resolved package identity mismatch.' }
+}
+
+function Assert-FirstRunEvidence([string]$ProjectPath, [string]$LogFile) {
+    $marker = Join-Path $ProjectPath 'Library/template-runtime-validation.txt'
+    $expected = 'ok: Opening -> Login -> Option -> Loading -> Main'
+    if (-not (Test-Path -LiteralPath $marker -PathType Leaf) -or
+        [IO.File]::ReadAllText($marker).Trim() -ne $expected) {
+        throw 'First-run startup flow did not produce its success marker.'
+    }
+    if ((Test-LogFailure $LogFile) -or
+        -not (Select-String -LiteralPath $LogFile -Pattern 'BatchMode:\s*0') -or
+        (Select-String -LiteralPath $LogFile -Pattern '\b\w+Exception:|Assertion failed|^Error:|Asset import failed' -CaseSensitive:$false)) {
+        throw "First-run non-batch editor validation failed. Log: $LogFile"
+    }
+}
+
+function Invoke-UnityFirstRun([string]$ProjectPath, [string]$LogFile) {
+    # Remove only this validator's old result; a previous run cannot satisfy this gate.
+    $marker = Join-Path $ProjectPath 'Library/template-runtime-validation.txt'
+    if (Test-Path -LiteralPath $marker) { Remove-Item -LiteralPath $marker -Force }
+    if (Test-Path -LiteralPath $LogFile) { Remove-Item -LiteralPath $LogFile -Force }
+    $arguments = @('-projectPath', $ProjectPath, '-logFile', $LogFile,
+        '-executeMethod', 'FrameworkTemplateValidation.RunPlayMode')
+    $quoted = @($arguments | ForEach-Object { if ($_ -match '\s') { '"' + $_ + '"' } else { $_ } })
+    $process = Start-Process -FilePath $script:UnityEditorPath -ArgumentList $quoted -PassThru -WindowStyle Hidden
+    if (-not $process.WaitForExit(900000)) {
+        try { $process.Kill() } catch { }
+        throw "Owned first-run validation timed out after 15 minutes. Log: $LogFile"
+    }
+    $process.WaitForExit()
+    $process.Refresh()
+    Wait-ProjectUnlocked -ProjectPath $ProjectPath
+    if ($null -eq $process.ExitCode -or $process.ExitCode -ne 0) {
+        throw "First-run editor failed (exit $($process.ExitCode)). Log: $LogFile"
+    }
+    Assert-FirstRunEvidence -ProjectPath $ProjectPath -LogFile $LogFile
+    Assert-ExportComplete -ProjectPath $ProjectPath
+}
+
 function Optimize-GeneratedLibrary([string]$ProjectPath) {
     $library = [IO.Path]::GetFullPath((Join-Path $ProjectPath 'Library'))
+    if (Test-Path -LiteralPath (Join-Path $ProjectPath 'Temp\UnityLockfile')) {
+        throw "Cannot prune an open Unity project: $ProjectPath"
+    }
+    Assert-LibraryReadyForReopen -ProjectPath $ProjectPath
     $addressables = Join-Path $library 'com.unity.addressables'
     if (-not (Test-Path -LiteralPath $addressables -PathType Container)) {
         throw "Cannot optimize Library because Addressables output is missing: $addressables"
     }
-
     Assert-ChildPath -Parent $ProjectPath -Child $library
     $before = Get-DirectoryLength -Path $library
-    foreach ($item in Get-ChildItem -LiteralPath $library -Force) {
-        if ($item.Name -eq 'com.unity.addressables') { continue }
-        Assert-ChildPath -Parent $library -Child $item.FullName
-        Remove-Item -LiteralPath $item.FullName -Recurse -Force
+    # Remove only known regenerable caches. Preserve AssetDatabase indexes, version metadata,
+    # Addressables outputs, and unknown metadata instead of creating a Library skeleton.
+    foreach ($name in @('Artifacts', 'BuildCache', 'Bee', 'ScriptAssemblies', 'ShaderCache')) {
+        $cachePath = [IO.Path]::GetFullPath((Join-Path $library $name))
+        Assert-ChildPath -Parent $library -Child $cachePath
+        if (Test-Path -LiteralPath $cachePath) { Remove-Item -LiteralPath $cachePath -Recurse -Force }
     }
+    Assert-LibraryReadyForReopen -ProjectPath $ProjectPath
     $after = Get-DirectoryLength -Path $library
     $removedMb = [math]::Round(($before - $after) / 1MB, 1)
-    $retainedMb = [math]::Round($after / 1MB, 1)
-    Write-Step "Optimized Library: removed $removedMb MB of regenerable cache; retained $retainedMb MB of Addressables output"
+    Write-Step "Optimized Library: removed $removedMb MB; retained AssetDatabase integrity metadata and Addressables. Reopen validation is still required."
 }
 
 Assert-ChildPath -Parent $OutputRoot -Child $TargetRoot
@@ -302,6 +401,12 @@ foreach ($requiredRoot in @('Assets', 'Packages', 'ProjectSettings')) {
         throw "Template root missing: $requiredRoot"
     }
 }
+# Reject a regressed source before creating staging or replacing an existing target.
+$sourceSettingsCheck = Join-Path $ProjectFiles 'Tools\Test-GameFrameworkProjectSettings.ps1'
+if (-not (Test-Path -LiteralPath $sourceSettingsCheck -PathType Leaf)) {
+    throw "Missing template project settings check: $sourceSettingsCheck"
+}
+& $sourceSettingsCheck -ProjectPath $ProjectFiles
 if (Test-Path -LiteralPath $TargetRoot) {
     if (-not $Force) {
         throw "Target already exists: $TargetRoot. Use -Force to replace it explicitly."
@@ -317,6 +422,11 @@ try {
     Copy-Tree $ProjectFiles $StageProject
     Copy-Tree (Join-Path $TemplateRoot 'RootFiles') $StageProjectRoot
     Install-ProjectTexturePacker -ProjectPath $StageProject
+    if ($Platform -eq 'WeChat') {
+        $sdkSource = Join-Path $RepoRoot 'ThirdParty/WeChatSDK/d288776c50-background-r1/Package'
+        & (Join-Path $ProjectFiles 'Tools/Test-WeChatSdkBackground.ps1') -PackagePath $sdkSource
+        Copy-Tree $sdkSource (Join-Path $StageProject 'Packages/com.qq.weixin.minigame')
+    }
     Update-GeneratedProject -Root $StageProjectRoot -ProjectPath $StageProject
     $platformArgs = @{ ProjectPath = $StageProject; Platform = $Platform }
     foreach ($key in @('BootstrapUrl', 'CdnRoot', 'AppId')) {
@@ -342,9 +452,17 @@ try {
 
     Assert-ExportComplete -ProjectPath $StageProject
     Optimize-GeneratedLibrary -ProjectPath $StageProject
+    Write-Step 'Reopen pruned staging project and validate AssetDatabase initialization'
+    Invoke-UnityBatch -ProjectPath $StageProject -LogFile (Join-Path $logs 'export-reopen.log')
     Assert-ExportComplete -ProjectPath $StageProject
     Ensure-Directory $OutputRoot
     Move-Item -LiteralPath $StageProjectRoot -Destination $TargetRoot
+    Write-Step 'Reopen project at final delivery path'
+    Invoke-UnityBatch -ProjectPath $TargetProject -LogFile (Join-Path $TargetProject 'Logs\export-final-open.log')
+    Assert-ExportComplete -ProjectPath $TargetProject
+    Write-Step 'Validate first non-batch editor startup and runtime at final delivery path'
+    Invoke-UnityFirstRun -ProjectPath $TargetProject -LogFile (Join-Path $TargetProject 'Logs\export-first-run.log')
+    # Do not invalidate the Library state that just passed actual final-path reopening.
     $exportSucceeded = $true
     Write-Step "Done: $TargetRoot"
     Write-Step "Open in Unity Hub: $TargetProject"

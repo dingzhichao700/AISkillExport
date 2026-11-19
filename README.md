@@ -4,7 +4,9 @@ This repository stores reusable Codex skills for Unity uGUI and the Game Framewo
 
 Current skills:
 
+- `game-project-coordination`
 - `aiui-to-ugui`
+- `game-ui-reference-extraction`
 - `game-art-asset-pipeline`
 - `game-feature-logic`
 - `game-framework-toolchain`
@@ -30,3 +32,5 @@ checkout updates the installed skill immediately because the scan-directory entr
 a link to the checkout.
 
 See `SKILL_SHARE_GUIDE.md` for installation, verification, conflicts, and other platforms.
+
+Commit and push messages follow [AGENTS.md](AGENTS.md): list each changed skill by its exact name and purpose, followed by its concrete changes.

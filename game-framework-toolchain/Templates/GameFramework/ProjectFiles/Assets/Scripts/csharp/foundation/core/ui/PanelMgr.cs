@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -169,7 +169,10 @@ public class PanelMgr : EventDispatcher {
     }
 
     /**设置UI节点*/
-    public void SetUIRoot(RectTransform viewportScale, RectTransform viewportConstant, RectTransform safeAreaRoot, RectTransform uiPool) {
+    public Vector2 DesignSize { get; private set; }
+
+    public void SetUIRoot(RectTransform viewportScale, RectTransform viewportConstant, RectTransform safeAreaRoot, RectTransform uiPool, Vector2? designSize = null) {
+        DesignSize = designSize ?? viewportScale.rect.size;
         this.viewportScale = viewportScale;
         this.viewportConstant = viewportConstant;
         this.safeAreaRoot = safeAreaRoot;
@@ -216,7 +219,7 @@ public class PanelMgr : EventDispatcher {
                 BasePanel panelIns = UIFactory.GetUIInstance(panelEnum) as BasePanel;
                 if (panelIns == null) {
                     Debug.LogError("打开窗口失败，Prefab 根节点缺少有效的 BasePanel/UIBinder：" + panelEnum +
-                                   "，资源路径：" + ResourceConst.GetUIPath(panelEnum));
+                                   "，资源路径：" + ResourcePresentation.Policy.ResolveUI(panelEnum));
                     return;
                 }
                 panelIns.panelEnum = panelEnum;
@@ -321,7 +324,7 @@ public class PanelMgr : EventDispatcher {
     /**关闭所有界面(加载界面除外)*/
     public void CloseAllPanel() {
         foreach (BasePanel panel in openPanelInsList) {
-            if(panel.panelEnum != UIEnum.LOADING_PANEL) {
+            if (!panel.KeepOpenOnCloseAll) {
                 RookieEngine.timer.CallLater(this, () => { 
                     panel.Close();
                 });
@@ -395,13 +398,9 @@ public class PanelMgr : EventDispatcher {
             openTipPanelInsList[i].gameObject.transform.SetSiblingIndex(i);
         }
 
-        //设置下当前顶层窗口
-        if (openTipPanelInsList.Count > 0) {
-            topPanel = openTipPanelInsList[openTipPanelInsList.Count - 1];
-        } else if (openPanelInsList.Count > 0) {
-            topPanel = openPanelInsList[openPanelInsList.Count - 1];
-        } else {
-            topPanel = null;
+        topPanel = openTipPanelInsList.FindLast(panel => panel.ReceivesPanelInput);
+        if (topPanel == null) {
+            topPanel = openPanelInsList.FindLast(panel => panel.ReceivesPanelInput);
         }
     }
 

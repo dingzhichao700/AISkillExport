@@ -1,0 +1,51 @@
+'use strict';
+const defaults={
+  "schemaVersion": 1,
+  "enabled": true,
+  "themeId": "neutral-default",
+  "backgroundImage": "",
+  "backgroundColor": "#10151c",
+  "brandingImage": "",
+  "bar": {
+    "designWidth": 720,
+    "widthRatio": 0.76,
+    "height": 8,
+    "bottomRatio": 0.085,
+    "trackColor": "#20262e",
+    "borderColor": "#647080",
+    "borderAlpha": 0.745098,
+    "borderWidth": 1,
+    "fillTop": "#edf2f7",
+    "fillBottom": "#8c9bab",
+    "glowColor": "#b6c4d2",
+    "glowAlpha": 0.0470588,
+    "glowLayers": 0,
+    "trackImage": "",
+    "fillImage": ""
+  },
+  "text": {
+    "fontSize": 12,
+    "color": "#f5fafc",
+    "gap": 8
+  },
+  "branding": {
+    "visible": true,
+    "width": 64,
+    "height": 23,
+    "bottom": 20
+  }
+};
+
+function normalizeTheme(input={}) {
+  if(input.schemaVersion!==undefined&&input.schemaVersion!==1)throw Error('Unsupported startup theme schema');
+  const t={...defaults,...input,bar:{...defaults.bar,...input.bar},text:{...defaults.text,...input.text},branding:{...defaults.branding,...input.branding}};
+  const range=(v,min,max,name)=>{if(typeof v!=='number'||!Number.isFinite(v)||v<min||v>max)throw Error('Invalid theme '+name);};
+  range(t.bar.designWidth,1,8192,'designWidth');range(t.bar.widthRatio,.01,1,'widthRatio');range(t.bar.height,.1,512,'height');range(t.bar.bottomRatio,0,1,'bottomRatio');range(t.bar.borderWidth,0,32,'borderWidth');range(t.bar.borderAlpha,0,1,'borderAlpha');range(t.bar.glowAlpha,0,1,'glowAlpha');range(t.bar.glowLayers,0,16,'glowLayers');if(!Number.isInteger(t.bar.glowLayers))throw Error('glowLayers must be integer');
+  for(const key of ['fontSize','gap'])range(t.text[key],0,256,'text.'+key);for(const key of ['width','height','bottom'])range(t.branding[key],0,2048,'branding.'+key);
+  for(const c of [t.backgroundColor,t.bar.trackColor,t.bar.borderColor,t.bar.fillTop,t.bar.fillBottom,t.bar.glowColor,t.text.color])if(!/^#[0-9a-f]{6}$/i.test(c))throw Error('Theme colors must be #RRGGBB');
+  for(const p of [t.backgroundImage,t.brandingImage,t.bar.trackImage,t.bar.fillImage])if(typeof p!=='string'||p.includes('\\')||p.startsWith('/')||p.includes(':')||p.split('/').includes('..'))throw Error('Theme assets must be package-relative paths');
+  if(typeof t.enabled!=='boolean'||typeof t.branding.visible!=='boolean')throw Error('Invalid enabled/visible flag');
+  return t;
+}
+function rgb(hex){return [1,3,5].map(i=>parseInt(hex.slice(i,i+2),16)/255);}
+module.exports={normalizeTheme,rgb};

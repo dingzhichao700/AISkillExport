@@ -1,0 +1,19 @@
+'use strict';
+const {install}=require('./skin-lifecycle');
+const {createView}=require('./skin-view');
+const {normalizeTheme}=require('./theme');
+
+function installSkin(manager,{wx,unityNamespace,canvas,onError}) {
+  const warn=onError||((e)=>console.warn('[Startup skin fallback]',String(e&&e.message||e)));
+  try {
+    const theme=normalizeTheme(require('./theme-config'));if(!theme.enabled)return null;
+    const page=manager.loadingPage;
+    const gl=unityNamespace.globalGL||manager.screenCanvasGL;
+    const screen=manager.screenCanvas||canvas;
+    const methods=['load','show','hide','startDownloadAnimation','completeDownloadAnimation','startCompileAnimation','completeCallmainAnimation','complete','destory'];
+    if(!page||!methods.every(n=>typeof page[n]==='function')||!Number.isFinite(page.totalLaunchTime)||!Number.isFinite(page.animationDuration)||!gl||!screen)return null;
+    const view=createView({wx,gl,screen,request:fn=>requestAnimationFrame(fn),cancel:id=>cancelAnimationFrame(id),onError:warn,theme,background:theme.backgroundImage||page.materialConfig.backgroundImage,branding:theme.brandingImage||page.materialConfig.iconImage});
+    return install(page,view);
+  }catch(e){warn(e);return null;}
+}
+module.exports={installSkin};

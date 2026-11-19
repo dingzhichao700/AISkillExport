@@ -1,6 +1,6 @@
 ---
 name: game-art-asset-pipeline
-description: Generate, review, process, and deliver game-ready raster art assets, including individual assets, coherent series, level progressions, form evolutions, variants, icons, characters, equipment, buildings, projectiles, effects, and textures. Use when game art needs external-model generation, concept approval, reference-guided rendering, transparent-background extraction, sheet segmentation, naming, sizing, anchoring, quality validation, or placement into a game project. Do not use for UI layout/uGUI integration or gameplay rules and configuration.
+description: Generate, review, process, and deliver game-ready raster art assets, including individual assets, coherent series, level progressions, form evolutions, variants, icons, characters, equipment, buildings, projectiles, effects, and textures. Use when game art needs Image-model generation, concept approval, reference-guided rendering, transparent-background extraction, sheet segmentation, naming, sizing, anchoring, quality validation, or placement into a game project. Do not use for UI layout/uGUI integration or gameplay rules and configuration.
 ---
 
 # Game Art Asset Pipeline
@@ -31,23 +31,34 @@ artifacts and stop at every required approval gate.
   that predictably imply the wrong physical object when the desired result is defined by
   appearance alone; keep those terms in the asset contract and validation criteria.
 
-## Use external image providers
+## Image generation and provider routing
 
-- Use the registered external image provider. Do not use Codex/ChatGPT built-in
-  image generation unless the user explicitly changes this rule.
-- Keep API keys only in their registered environment variables. Check only whether
-  the variable exists; never print, log, persist, or expose its value.
-- For QWEN, read the matching provider reference and invoke only the bundled script:
-  - text-to-image: `references/qwen-image-provider.md` and
-    `scripts/invoke-qwen-image.ps1`;
-  - reference-guided image generation: `references/qwen-reference-image-provider.md`
-    and `scripts/invoke-qwen-reference-image.ps1`.
-- Tell the user immediately before every external model request.
-- Request one review artifact per approval stage. A single sheet may contain a
-  deliberately requested series; do not confuse that with multiple alternatives.
-- Stop and report the concrete failure if credentials, public connection settings,
-  network access, authentication, or the selected model fails. Do not silently switch
-  provider or model.
+- Default all static image generation and editing to the built-in Image model via
+  `image_gen`; read the available `imagegen` Skill for tool use and saving outputs.
+  This includes concepts, references, directional stills, cards, UI bitmap assets,
+  backgrounds, effects stills, variants, and transparency requests.
+- Only `character-animation-pipeline` defaults to the QWEN/DashScope API for motion
+  video generation. Static references used by that pipeline still default to Image.
+- The built-in Image path does not require the local QWEN credential CSV, external
+  provider registration, an API connectivity test, or the QWEN shared queue.
+  Do not block it on a paused QWEN queue or an unavailable QWEN credential.
+- Inspect local references before using them. Preserve approved identity, camera,
+  palette, proportions, and declared invariants; keep reference roles explicit.
+- For transparent images, request real transparency and preserve the generated alpha.
+  Save project-bound results into the declared workspace output directory, keeping
+  original sources and review artifacts distinct.
+- Use an external image API only when the user explicitly chooses that provider
+  for the current task; past provider use or the mere presence of a key is not a
+  standing default. If Image is unavailable, report it without silently falling
+  back to QWEN, another API, or a credential-based CLI.
+- Legacy QWEN image references/scripts are retained solely for explicitly chosen
+  external workflows: `references/qwen-image-provider.md` and
+  `references/qwen-reference-image-provider.md`. Read only the matching reference
+  in that case; use the registered credential reader and any applicable project
+  queue, never print/copy/upload credentials. Announce external requests, preserve
+  approval boundaries, and never automatically resubmit an unknown result.
+- Request one review artifact per approval stage; a deliberately requested sheet
+  can contain its declared views/series. Preserve all existing approval gates.
 
 ## Enforce approval gates
 
@@ -65,8 +76,9 @@ near-duplicate.
 
 ## Process assets safely
 
-- Choose a flat temporary background that contrasts with the actual subject palette;
-  do not prescribe green, magenta, or any other fixed color.
+- Prefer native transparent Image output when transparency is required; preserve its alpha.
+  For an existing opaque source or an explicitly required temporary background, choose a
+  flat color contrasting with the subject palette, not a universal fixed key color.
 - Remove only background connected to the canvas boundary. Never globally delete all
   pixels similar to the background color, because legitimate subject details may match.
 - Detect real subject bounds. Never assume equal-width sheet cells when subjects can

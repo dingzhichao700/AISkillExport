@@ -40,7 +40,7 @@ foreach ($name in $expected) {
 }
 # Generated Tables is authoritative; never add sample-specific names to the template.
 $tables = Read-Asset 'Assets/Scripts/csharp/login/cfg/Tables.cs'
-$resource = Read-Asset 'Assets/Scripts/csharp/foundation/core/resource/constant/ResourceConst.cs'
+$resource = Read-Asset 'Assets/Scripts/csharp/login/config/ResourceConst.cs'
 $list = [regex]::Match($resource, '(?s)ALL_CONFIG_LIST.*?\{(.*?)\}').Groups[1].Value
 $required = @([regex]::Matches($tables, 'loader\("([^"]+)"\)') | ForEach-Object { $_.Groups[1].Value } | Sort-Object -Unique)
 $actual = @([regex]::Matches($list, '"([^"]+)"') | ForEach-Object { $_.Groups[1].Value } | Sort-Object -Unique)

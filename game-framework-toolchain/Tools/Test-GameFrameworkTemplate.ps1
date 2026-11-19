@@ -61,12 +61,12 @@ foreach ($path in @(
     'Assets\Art\unpack\title\title\bg_option.png'
 )) { Require-Path $path }
 
-$playerSettingsPath = Join-Path $ProjectFiles 'ProjectSettings\ProjectSettings.asset'
-if (Test-Path -LiteralPath $playerSettingsPath) {
-    $playerSettings = Get-Content -LiteralPath $playerSettingsPath -Raw
-    if ($playerSettings -cnotmatch '(?m)^  runInBackground: 1\r?$') {
-        $errors.Add('PlayerSettings must enable Run In Background by default.')
-    }
+$projectSettingsCheck = Join-Path $ProjectFiles 'Tools\Test-GameFrameworkProjectSettings.ps1'
+if (-not (Test-Path -LiteralPath $projectSettingsCheck -PathType Leaf)) {
+    $errors.Add("Missing persistent project settings check: $projectSettingsCheck")
+} else {
+    try { & $projectSettingsCheck -ProjectPath $ProjectFiles }
+    catch { $errors.Add($_.Exception.Message) }
 }
 
 foreach ($forbiddenDirectory in @('Library', 'Temp', 'Logs', 'UserSettings', '.vs', 'obj')) {
@@ -190,9 +190,19 @@ if (Test-Path -LiteralPath $generator) {
         $errors.Add('Generator still contains a prebuilt Addressables cache branch.')
     }
     $generatorText = Get-Content -LiteralPath $generator -Raw -Encoding UTF8
-    if ($generatorText -notmatch 'Optimize-GeneratedLibrary' -or $generatorText -notmatch "item\.Name -eq 'com\.unity\.addressables'") {
-        $errors.Add('Generator must prune regenerable Library caches while retaining built Addressables output.')
+    try { & (Join-Path $PSScriptRoot 'Tests\Test-BackgroundRunPolicy.ps1') -WorkRoot ([IO.Path]::GetTempPath()) }
+    catch { $errors.Add("Background/SDK restoration regression failed: $($_.Exception.Message)") }
+    try { & (Join-Path $ProjectFiles 'Tools/Test-WeChatSdkBackground.ps1') -PackagePath (Join-Path $RepoRoot 'ThirdParty/WeChatSDK/d288776c50-background-r1/Package') }
+    catch { $errors.Add("Native SDK background patch failed: $($_.Exception.Message)") }
+    $libraryRegression = Join-Path $PSScriptRoot 'Tests\Test-GeneratedLibraryLifecycle.ps1'
+    if (-not (Test-Path -LiteralPath $libraryRegression -PathType Leaf)) {
+        $errors.Add('Missing generated Library lifecycle regression tests.')
+    } else {
+        try { & $libraryRegression -WorkRoot ([IO.Path]::GetTempPath()) }
+        catch { $errors.Add("Generated Library lifecycle validation failed: $($_.Exception.Message)") }
     }
+    try { & (Join-Path $PSScriptRoot 'Tests\Test-FirstRunGuards.ps1') -WorkRoot ([IO.Path]::GetTempPath()) }
+    catch { $errors.Add("First-run guard regression failed: $($_.Exception.Message)") }
     if ($generatorText -notmatch 'Install-ProjectTexturePacker') {
         $errors.Add('Generator must deploy the repository TexturePacker into each generated project.')
     }
@@ -259,6 +269,23 @@ foreach ($animationSourceFile in @('Tools/AnimationSource/animation_source.py', 
         $errors.Add("Missing animation source delivery tool: $animationSourceFile")
     }
 }
+
+foreach ($relative in @(
+    'Assets/Scripts/csharp/foundation/core/resource/ResourcePresentation.cs',
+    'Assets/Scripts/csharp/login/config/GameResourcePresentationPolicy.cs',
+    'Assets/Scripts/csharp/login/config/ResourceConst.cs',
+    'Assets/Scripts/csharp/login/common/GlobalToast.cs',
+    'Assets/Scripts/csharp/login/common/view/GlobalToastItem.cs',
+    'Assets/Scripts/csharp/login/common/view/GlobalToastPanel.cs',
+    'Assets/Scripts/csharp/login/common/view/ToastGradientGraphic.cs',
+    'Assets/Prefab/title/common/GlobalToastPanel.prefab',
+    'Assets/Prefab/title/common/GlobalToastItem.prefab',
+    'Assets/Editor/GlobalToastBaselineValidation.cs'
+)) { Require-Path $relative }
+$toastConstants = @(Get-Content -LiteralPath (Join-Path $ProjectFiles 'Assets/ConfigBin/cfgobj_configvalueobj.json') -Raw -Encoding UTF8 | ConvertFrom-Json | Where-Object { $_.id -eq 100 })
+if ($toastConstants.Count -ne 1 -or $toastConstants[0].content -ne '3') { $errors.Add('Framework toast constant100 must default to3.') }
+
+& (Join-Path $PSScriptRoot 'Tests/Test-WeChatStartupSkin.ps1') -ProjectFiles $ProjectFiles
 
 if ($errors.Count -gt 0) {
     $errors | ForEach-Object { Write-Error $_ -ErrorAction Continue }

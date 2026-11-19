@@ -25,7 +25,14 @@ Record:
 - Figma file and approved frame identifiers when available;
 - target Unity project and output path only for this run;
 - approval decisions;
-- known deviations and unresolved items.
+- known deviations and unresolved items;
+- scoped approved baselines, object roles, annotated difference evidence, reviewed-candidate fingerprints and promotion comparison, using [review-baseline-and-diff.md](review-baseline-and-diff.md).
+
+When a component plan applies, record its revision/reference, source-layout
+revision, diagram/vector/data paths, review scope/status, and available actual
+Figma/Unity mapping evidence. Use the single record described in
+[component-prefab-planning.md](component-prefab-planning.md); do not treat the
+diagram as evidence that Prefabs or instances were created.
 
 For Figma stages, record `figmaTransport`, `figmaTransportLocked`,
 `figmaMcpAuthorized`, `localHandoffStatus`, and
@@ -33,15 +40,25 @@ For Figma stages, record `figmaTransport`, `figmaTransportLocked`,
 `figmaMcpAuthorized: true`. Preserve the locked transport across later stages
 until the user explicitly authorizes a change.
 
-For any visual or raster generation, also record the provider preflight result:
-`imageProvider`, `imageModel`, the API-key environment-variable name, whether
-that variable was configured, and any provider failure or fallback decision.
-Never record the API key. A generated artifact from an unrecorded or mismatched
-provider is non-authoritative until regenerated or explicitly re-approved.
-For first use, record the external-provider enrollment and smoke-test status
-without recording secrets. Subsequent runs must preserve the enrolled provider
-identity and public connection configuration unless the user explicitly
-authorizes re-enrollment.
+For JSON plugin delivery, also record `pluginJsonPath`, `pluginDirectory`,
+`pluginSchema`, `pluginRevision`, `pluginDependencies`, `jsonValidation`,
+`userImportStatus`, and `structureApproval`. The JSON entry must be an actual
+saved file with complete locally resolvable dependencies. File generation,
+static validation, user import and structure approval are distinct states.
+Provide the absolute JSON entry path or containing directory at handoff.
+
+For generated or edited raster assets, record the actual tool/provider, model when
+reported by the tool, reference provenance, and outcome. Do not invent an internal
+model ID. Built-in Image generation does not read environment variables or API-key
+files and requires no provider enrollment or smoke test. Record credentials as
+not applicable; never make missing credentials a blocker for built-in Image.
+
+Only when the user explicitly selects an external image API for the current task,
+record that authorization, public provider identity, and the approved credential
+source type without secrets. Image generation must not read credentials from
+environment variables. Follow the project's approved caller and queue; legacy
+environment-based callers are not valid production entry points. Do not silently
+switch providers or run an external test for a built-in Image request.
 
 ## Which handoff file to read
 
@@ -55,10 +72,12 @@ Use these plain rules when one Skill hands work to the next:
 - Files or folders containing `pre-`, `backup`, or `failed` are historical
   snapshots. Never treat them as the current result by default.
 
-After changing a Prefab, script, resource, or member binding, update both formal
-handoff manifests. Record actual counts and purposes, member-export status and
-member set, validation results, and key file hashes. After Stage 8, do not leave
-the handoff in an empty-member or "export later" state.
+At delivery, keep the run manifest as the current-stage index and link its Unity
+details to `unity/export.manifest.json`. Update affected facts once, rather than
+writing the same report in both files or after every intermediate edit. Record
+actual counts/purposes, member set/export status, validation and relevant source
+fingerprints. Completed binding must not remain marked "export later". These
+records preserve reproducibility; they do not require extra copies of Unity outputs.
 
 At the start of the next stage, compare the manifests with the actual Prefab,
 code, and resources. If they agree, continue from the manifests. If they do
@@ -175,6 +194,9 @@ Use tight visual bounds for isolated PNG assets:
 
 ## Figma handoff
 
+Delivery terminology and packaging gate are authoritative in `figma-import.md`: a complete plugin directory, its `manifest.json` entry, and project data JSON are distinct artifacts. Link the actual manifest entry, not a renamed data file.
+
+
 Record the production screen/frame ID separately from resource pages or source
 asset layouts. Record material differences from the Blueprint, including user
 edits made directly in Figma.
@@ -282,20 +304,29 @@ positions and width/height values are integers. Round at the Figma-to-Unity
 boundary using one deterministic rule and validate the serialized Prefab; do
 not leave fractional geometry for later manual cleanup.
 
+### Resource evidence
+
+Link the batch resource mapping and actual checks defined in [resource production and consumption](resource-production-and-consumption.md), including producer/consumer changes, saved fields and runtime coverage. Do not duplicate project manifests or claim unrun checks passed.
+
 ### Addressables execution mode
 
 Default AIUI Prefab iteration to development mode when the target project uses
 Addressables `Use Asset Database`:
 
-- refresh or register the generated runtime Prefab and runtime art entries;
+- during runtime integration, refresh existing registrations or register only
+  the Prefabs/art entries actually required by the project loader; retain stable
+  GUIDs, addresses and group ownership, checking duplicates and stale paths;
+- static visual preview alone does not register assets; referenced dependencies
+  are not automatically individual Addressables entries;
 - compile code and validate Prefab structure and references;
 - do not run `BuildPlayerContent` during ordinary generation, correction, or
   human-review iterations;
 - record `addressablesMode: Use Asset Database` and
   `addressablesBuilt: false` in the Unity handoff manifest.
 
-Run a Player Content build only after the user explicitly requests production
-mode, a formal export, an Addressables build, or delivery preparation. A full
+Run a Player Content build only within an authorized content-build/release
+checkpoint. Ordinary UI export, registration, or a request to integrate a screen
+ does not by itself authorize a Player Content build. A full
 sample-project export governed by the template toolchain remains a production
 validation workflow and may require Addressables building independently of this
 AIUI iteration default.
@@ -330,7 +361,6 @@ Use lower camel case in the form `<component-prefix><SemanticName>`:
 | TextMeshPro text | `txt` | `txtTitle`, `txtLabel` |
 | Button | `btn` | `btnAll`, `btnEquipment`, `btnClose` |
 | `ScrollList` | `list` | `listPicker`, `listItem` |
-| `ScrollList` | `list` | `listPicker`, `listItem` |
 | Semantic grid container | `grid` | `gridInventory` |
 | Repeated item root | semantic lower camel case plus stable indices | `itemSlot_0_0` |
 
@@ -351,8 +381,7 @@ Apply these details:
 - When target-project rules define a different prefix, follow the project rule
   and record the deviation in the handoff manifest.
 
-Validate that no converter-style component suffix names remain in the
-production Prefab unless explicitly required by the target project.
+Persist the design-layer ID or unambiguous source path and the target GameObject name in the configuration consumed by the exporter. Reuse this mapping on subsequent exports. Before writing the Prefab, check each node against the target project’s role prefixes and reserved names, check uniqueness among siblings, and flag converter suffixes or meaningless generated indices. Preserve indices that identify actual slots.
 
 ### Interactive control serialization
 

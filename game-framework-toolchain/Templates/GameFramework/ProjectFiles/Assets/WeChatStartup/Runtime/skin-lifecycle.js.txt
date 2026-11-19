@@ -1,0 +1,44 @@
+'use strict';
+// Presentation-only instance decorator. All SDK methods still execute on the original instance.
+function install(page, view, clock = () => Date.now()) {
+  const names = ['load','show','hide','resume','startDownloadAnimation','completeDownloadAnimation','showCompileWasm','startCompileAnimation','completeCompileAnimation','completeCallmainAnimation','setLoadingText','destory'];
+  const saved = Object.fromEntries(names.filter(n => typeof page[n] === 'function').map(n => [n,page[n]]));
+  let active=false, stopped=false, failed=false, frame=null, text='', visible=true;
+  const tracks=[{from:0,to:0,start:0,duration:0},{from:0,to:0,start:0,duration:0},{from:0,to:0,start:0,duration:0}];
+  const value=t=> t.duration ? t.from+(t.to-t.from)*Math.min(1,Math.max(0,(clock()-t.start)/t.duration)) : t.to;
+  const progress=()=>Math.max(...tracks.map(value));
+  function animate(index,to,duration,from=value(tracks[index])) { tracks[index]={from,to,start:clock(),duration}; }
+  function stopView(){active=false; if(frame!==null){view.cancel(frame);frame=null;} view.destroy();}
+  function rollback(error){if(failed||stopped)return;failed=true;for(const n of Object.keys(saved))page[n]=saved[n];try{stopView();}catch(_){}try{saved.show.call(page);}catch(_){}if(view.onError)view.onError(error);}
+  function tick(){if(!active||stopped)return;try{if(visible)view.draw(progress(),text);frame=view.request(tick);}catch(e){rollback(e);}}
+  function effect(n,args){
+    if(stopped||failed)return;
+    const launch=page.totalLaunchTime, duration=page.animationDuration;
+    if(n==='startDownloadAnimation')animate(0,.7,.7*launch);
+    if(n==='completeDownloadAnimation')animate(1,.7,duration);
+    if(n==='startCompileAnimation')animate(2,.9,.9*launch,.7);
+    if(n==='completeCallmainAnimation')animate(1,1,page.hideAfterCallmain?0:duration);
+    if(n==='setLoadingText'&&args[0])text=args[0];
+    if(n==='hide')visible=false;
+    if(n==='show'||n==='resume'){visible=true;if(active)saved.hide.call(page);}
+    if(n==='destory'){stopped=true;stopView();}
+  }
+  for(const n of Object.keys(saved)) {
+    page[n]=function(...args){
+      // Do not substitute Promise, exceptions, arguments, receiver, or SDK state.
+      const result=saved[n].apply(this,args);
+      try{
+        if(n==='hide'||n==='setLoadingText'||n==='destory')effect(n,args);
+        else if(result&&typeof result.then==='function')result.then(()=>{try{effect(n,args);}catch(e){rollback(e);}},()=>{});
+        else effect(n,args);
+      }catch(e){rollback(e);}
+      return result;
+    };
+  }
+  const ready=Promise.all([saved.load.call(page),view.load()]).then(()=>{
+    if(stopped||failed)return false;
+    saved.hide.call(page);active=true;tick();return true;
+  }).catch(e=>{rollback(e);return false;});
+  return {ready,rollback,progress,get active(){return active;},get failed(){return failed;},get stopped(){return stopped;}};
+}
+module.exports={install};

@@ -67,6 +67,11 @@ public static class FrameworkTemplateMigration {
                 PrefabUtility.UnloadPrefabContents(root);
             }
         }
+        var settings = AddressableAssetSettingsDefaultObject.Settings;
+        foreach (string path in new[] { "Assets/Prefab/title/common/GlobalToastPanel.prefab", "Assets/Prefab/title/common/GlobalToastItem.prefab" }) {
+            var entry = settings.CreateOrMoveEntry(AssetDatabase.AssetPathToGUID(path), settings.FindGroup("title"));
+            entry.address = path;
+        }
         RegisterFonts();
         AssetDatabase.SaveAssets();
     }

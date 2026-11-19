@@ -35,9 +35,9 @@ class WorkflowTests(unittest.TestCase):
         with self.assertRaises(ValueError):animation.place(rgba,profile,'down-right')
 
     def test_unknown_submission_blocks_repurchase_and_no_secret_saved(self):
-        with tempfile.TemporaryDirectory() as td,patch.dict(os.environ,{'TEST_VIDEO_KEY':'offline-secret-never-log'}):
+        with tempfile.TemporaryDirectory() as td,patch.object(video_api,'credential',return_value='offline-secret-never-log'):
             root=Path(td);Image.new('RGB',(240,240),'gray').save(root/'ref.png')
-            cfg={'provider':'bailian','region':'beijing','key_env':'TEST_VIDEO_KEY','model':'wan2.6-i2v-flash',
+            cfg={'provider':'bailian','region':'beijing','key_file':'offline-only.csv','model':'wan2.6-i2v-flash',
                  'reference':'ref.png','prompt':'Idle','parameters':{'duration':3,'resolution':'720P'}}
             animation.write(root/'request.json',cfg)
             with patch.object(video_api,'request_json',side_effect=RuntimeError('simulated timeout')) as req:
@@ -48,9 +48,9 @@ class WorkflowTests(unittest.TestCase):
             self.assertNotIn('offline-secret-never-log',state);self.assertNotIn('base64',state)
 
     def test_poll_resume_uses_same_task(self):
-        with tempfile.TemporaryDirectory() as td,patch.dict(os.environ,{'TEST_VIDEO_KEY':'offline-secret'}):
+        with tempfile.TemporaryDirectory() as td,patch.object(video_api,'credential',return_value='offline-secret'):
             root=Path(td);video_api.save(root/'state.json',{'status':'submitted','task_id':'task-one',
-                'config':{'region':'beijing','key_env':'TEST_VIDEO_KEY'}})
+                'config':{'region':'beijing','key_file':'offline-only.csv'}})
             with patch.object(video_api,'request_json',side_effect=[RuntimeError('network'),{'output':{'task_status':'RUNNING'}}]) as req:
                 with self.assertRaises(RuntimeError):video_api.poll(root)
                 result=video_api.poll(root)

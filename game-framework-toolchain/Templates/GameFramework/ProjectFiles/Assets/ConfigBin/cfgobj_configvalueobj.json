@@ -46,5 +46,11 @@
     "type": 2,
     "valueType": 0,
     "content": "1:111,2:222,a:AAaa,b:BBbb,c:C_C-c_c"
+  },
+  {
+    "id": 100,
+    "type": 0,
+    "valueType": 1,
+    "content": "3"
   }
 ]

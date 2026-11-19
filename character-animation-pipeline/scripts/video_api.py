@@ -4,7 +4,7 @@ import base64
 import hashlib
 import io
 import json
-import os
+import csv
 from pathlib import Path
 import re
 import urllib.error
@@ -42,15 +42,30 @@ def request_json(url, key, payload=None):
         raise RuntimeError('API transport/JSON failure; outcome may be unknown') from None
 
 
+DEFAULT_KEY_FILE = 'E:/开发凭证（勿删勿上传）/QWEN-apiKey-8436848.csv'
+
+def credential(key_file):
+    try:
+        with Path(key_file).open(encoding='utf-8-sig', newline='') as stream:
+            rows = list(csv.reader(stream))
+        keys = {row[1].strip() for row in rows if len(row) >= 2 and
+                re.fullmatch(r'(?i:api[ _-]?key|key)', row[0].strip()) and row[1].strip()}
+        if len(keys) != 1:
+            raise ValueError()
+        key = next(iter(keys))
+        if not re.fullmatch(r'sk-\S+', key):
+            raise ValueError()
+        return key
+    except Exception:
+        raise ValueError('Credential CSV unavailable or invalid; contents withheld') from None
+
+
 def config(path):
     c = read(path)
     if c.get('provider', 'bailian') != 'bailian' or c.get('region') not in HOSTS:
         raise ValueError('Unsupported provider/region; no fallback')
-    env = c.get('key_env', 'QWEN_ANI')
-    if not re.fullmatch(r'[A-Za-z_][A-Za-z0-9_]*', env):
-        raise ValueError('Invalid environment-variable name')
-    if not os.environ.get(env, '').strip():
-        raise ValueError('Required credential environment variable is absent')
+    key_file = str(Path(c.get('key_file', DEFAULT_KEY_FILE)).resolve())
+    credential(key_file)
     ref = Path(c['reference'])
     if not ref.is_absolute():
         ref = Path(path).resolve().parent / ref
@@ -61,14 +76,14 @@ def config(path):
         if params.get('resolution') not in ('720P', '1080P') or not 2 <= params.get('duration', 0) <= 15:
             raise ValueError('wan2.6-i2v-flash requires 720P/1080P and 2–15 seconds')
     c = {k: c[k] for k in ('provider', 'region', 'model', 'prompt', 'parameters') if k in c}
-    c.update(key_env=env, reference=str(ref.resolve()))
+    c.update(key_file=key_file, reference=str(ref.resolve()))
     return c
 
 
 def submit(config_path, run_dir):
     from PIL import Image
     c = config(config_path)
-    key = os.environ[c['key_env']].strip()
+    key = credential(c['key_file'])
     # Reject accidentally pasted credentials in public configuration fields.
     if key in json.dumps(c):
         raise ValueError('Credential must not occur in public configuration')
@@ -112,9 +127,7 @@ def poll(run_dir):
     if not isinstance(task, str) or not re.fullmatch(r'[A-Za-z0-9._-]+', task):
         raise ValueError('No task ID; submission outcome unknown. Never auto-resubmit.')
     c = state['config']
-    key = os.environ.get(c['key_env'], '').strip()
-    if not key:
-        raise ValueError('Credential unavailable; task ID retained')
+    key = credential(c.get('key_file', DEFAULT_KEY_FILE))
     result = request_json(HOSTS[c['region']]+'/api/v1/tasks/'+task, key)
     output = result.get('output', {}); status = output.get('task_status')
     state['status'] = status or 'poll_response_unknown'; save(path, state)

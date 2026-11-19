@@ -2,3 +2,8 @@ __pycache__/
 *.py[cod]
 /ThirdParty/*
 !/ThirdParty/README.md
+# Repository-owned compatibility launcher only; keep all other local dependencies ignored.
+!/ThirdParty/Invoke-SpriteGen.ps1
+
+# Pinned SDK payload is installed locally; only provenance and the minimal patch are versioned.
+/game-framework-toolchain/ThirdParty/WeChatSDK/*/Package/

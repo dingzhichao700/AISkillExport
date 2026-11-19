@@ -1,0 +1,17 @@
+{
+  "upstreamRevision": "d288776c50578926c732496882bd6ab6684c778c",
+  "changes": [
+    {
+      "path": "Editor/WXConvertCore.cs",
+      "upstreamSha256": "71053d80e225e1b07a5616f3cf371ff8386b2ece93771e926eab1ad13ed88e19",
+      "candidateSha256": "92402ca47a35a8d5bd0a3ba9a0daeb65c0ed8c32b5ca6bbeb86cc6550dc2f257"
+    }
+  ],
+  "removedAssignmentLines": [
+    32,
+    55,
+    1162
+  ],
+  "approach": "用户要求直接移除关闭逻辑；无包装/事件/异步scope/journal",
+  "license": "MIT retained"
+}

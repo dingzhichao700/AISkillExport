@@ -43,6 +43,8 @@ public static class CfgManager {
         LoadTiming.Report("Config.TablesInit", watch);
     }
 
+    public static bool IsInitialized => _tables != null;
+
     public static Tables tables {
         get {
             if (_tables == null) {

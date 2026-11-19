@@ -35,7 +35,8 @@ review criteria.
 Prompt requirements:
 
 - show exactly the requested number of members;
-- use a simple, uniform background selected to contrast with the subject palette;
+- request native transparent Image output when required; if an opaque source/background
+  is explicitly needed, use a simple uniform color contrasting with the subject palette;
 - reserve generous safe spacing between members;
 - keep every silhouette entirely inside its own visual region;
 - omit text, level labels, borders, frames, diagrams, and decorative UI;
@@ -58,8 +59,9 @@ provider request merely to reproduce it without a material improvement target.
 
 ## 4. Convert to production assets
 
-1. Detect the actual temporary background from canvas edges.
-2. Remove only edge-connected background regions.
+1. Preserve native alpha when supplied; no background extraction is needed for valid transparency.
+2. Only for opaque sources, detect the temporary background from canvas edges and remove
+   edge-connected background regions, preserving legitimate subject colors.
 3. Detect each subject's real bounds rather than dividing the sheet equally.
 4. Reject ambiguous overlap or an unexpected subject count instead of guessing.
 5. Apply one shared scale when relative size matters.

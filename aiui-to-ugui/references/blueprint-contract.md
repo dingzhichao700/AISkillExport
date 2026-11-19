@@ -53,6 +53,21 @@ Use stable semantic IDs rather than Figma node IDs.
 
 For progress-like controls, keep structural and visual responsibilities distinct: name the whole control `bar{Semantic}`, its fixed background image `img{Semantic}Bg`, its changing fill `img{Semantic}Fill`, and its numeric label `txt{Semantic}`. Do not name the whole control after the background image.
 
+## Component plan for structural design
+
+When the scope meets [component-prefab-planning.md](component-prefab-planning.md),
+add a `componentPlan` record or a revisioned path/reference to it. That reference
+contains the source layout, diagram/vector/structured-data paths, reusable
+definitions, instances and owner/parent relationships, variants, state layers,
+and intended Figma/Unity mappings. Hierarchy nodes identify their semantic
+definition/instance or page-local role so downstream stages consume the same
+plan rather than independently guessing Prefab boundaries.
+
+Keep proposal/approval and actual implementation evidence distinct. Existing
+downstream-only artifacts do not require a new diagram when their approved
+structure remains unchanged. Detailed decision criteria and artifact fields
+live in the linked guide, not a second schema here.
+
 ## `assets`
 
 For each required art asset, include:

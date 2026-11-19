@@ -2,7 +2,10 @@
 [CmdletBinding(SupportsShouldProcess = $true)]
 param(
     [Parameter(Mandatory = $true)][string]$ProjectPath,
-    [ValidateSet('inspect', 'prepare', 'generate', 'export', 'content', 'publish-local')][string]$Action = 'inspect'
+    [ValidateSet('inspect', 'prepare', 'generate', 'export', 'content', 'publish-local')][string]$Action = 'inspect',
+    [string]$TransactionId,
+    [string]$Owner,
+    [string]$PythonExecutable = 'python'
 )
 $ErrorActionPreference = 'Stop'
 $project = (Resolve-Path -LiteralPath $ProjectPath).Path
@@ -46,6 +49,17 @@ if ($Action -eq 'export') {
     $request.outputPath = $output
 }
 if (!$PSCmdlet.ShouldProcess($project, "Submit $Action ($($request.requestId))")) { $request | ConvertTo-Json; return }
+$bound = $config.buildRelease -and ($config.buildRelease.PSObject.Properties.Name -contains 'releaseTransaction')
+if ($bound) {
+    if (!$TransactionId -or !$Owner) { throw 'Mutating build actions require TransactionId and Owner for this bound project.' }
+    & $PythonExecutable (Join-Path $PSScriptRoot 'release_transaction.py') --project $project --action begin --transaction $TransactionId --owner $Owner --step $Action --operation $request.requestId --worker-pid $ready.processId
+    if ($LASTEXITCODE -ne 0) { throw 'Release transaction refused submission; no Unity request was written.' }
+} elseif ($TransactionId -or $Owner) { throw 'Explicit transaction parameters require project releaseTransaction configuration.' }
+if (!$bound) {
+    & $PythonExecutable (Join-Path $PSScriptRoot 'release_resource_gate.py') --project $project
+    if ($LASTEXITCODE -ne 0) { throw 'Resource governance refused submission; no Unity request was written.' }
+}
+# Submission errors deliberately leave an unknown operation; inspect instead of resubmitting.
 $temporary = Join-Path $queue ($request.requestId + '.tmp')
 [IO.File]::WriteAllText($temporary, ($request | ConvertTo-Json), (New-Object System.Text.UTF8Encoding($false)))
 # File.Move refuses to overwrite a competing pending request.

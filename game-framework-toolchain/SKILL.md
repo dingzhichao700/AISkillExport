@@ -14,7 +14,7 @@ Treat the directory containing this file as the repository root. Resolve every b
 3. Read `docs/模板与导出规范.md` for template, generator, or validation work.
 4. Inspect `git status --short`; preserve unrelated and pre-existing changes.
 5. Classify the request as inspection, generation, repair, or standardization. Do not broaden its scope.
-6. For AIUI preview queues or Unity editor lifecycle control, read `docs/AIUI编辑器队列规范.md`.
+6. For AIUI preview queues, Unity editor lifecycle control, test cameras, offscreen captures, or test teardown, read `docs/AIUI编辑器队列规范.md` (screen output, capture restoration, and owned-resource cleanup).
 
 ## Generate a sample project
 
@@ -24,7 +24,7 @@ Treat the directory containing this file as the repository root. Resolve every b
 4. Use only `Templates/GameFramework/ProjectFiles` as the Unity project source. Never read or clone another Unity project.
 5. Never overwrite an existing target unless the user explicitly authorizes replacement and `-Force` is supplied.
 6. Run the generator with the user-provided path passed explicitly to `-OutputRoot`; pass `-UnityEditor` only when auto-detection cannot find the template version.
-7. Treat generation as incomplete until Unity compilation, Addressables output, final structural validation, and delivery-time Library pruning pass.
+7. Treat generation as incomplete until Unity compilation, Addressables output, final structural validation, safe Library pruning, actual reopening after pruning and at the final delivery path, pinned HybridCLR dependency integrity, and a fresh non-batch startup-flow run at the final delivery path pass.
 
 ## Standardize approved changes
 
@@ -55,7 +55,7 @@ Check proportionally to the change:
 - Prefab Sprite GUIDs resolve and no Missing references remain;
 - Addressables entries use canonical paths without sample-only content or duplicates;
 - Player Content produces its success marker, catalog, settings, and bundles;
-- the delivered `Library` retains `com.unity.addressables` but excludes regenerable import and compilation caches;
+- Library pruning preserves `com.unity.addressables`, AssetDatabase indexes and version metadata; actual reopening passes after pruning and at the final path, with no further invalidating cleanup after that check;
 - owned temporary staging directories are cleaned after completion.
 
 ## Animation source delivery

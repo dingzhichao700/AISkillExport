@@ -12,6 +12,8 @@ public sealed class PortraitGameViewport : MonoBehaviour {
 
     [SerializeField] private Vector2 designSize = new Vector2(720f, 1280f);
 
+    public Vector2 DesignSize => designSize;
+
     private RectTransform scaleCanvas;
 
     private RectTransform constantCanvas;

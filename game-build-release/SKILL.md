@@ -1,11 +1,21 @@
 ---
 name: game-build-release
-description: Build and release standardized Unity projects through conversation-driven, project-configured workflows. Use for base or content builds, candidate validation, deployment, rollback, and build/release script maintenance. Project generation belongs to game-framework-toolchain; gameplay implementation is outside this skill.
+description: Build and release standardized Unity projects through conversation-driven, project-configured workflows. Use for base or content builds, candidate validation, deployment, rollback, and build/release script maintenance. Formal execution is restricted to project-designated build/release or coordination sessions; other sessions route requests. Project generation belongs to game-framework-toolchain; gameplay implementation is outside this skill.
 ---
 
 # Game Build & Release
 
 服务于遵循 Game Framework 规范的工程，不默认选择任何案例工程。此目录是通用编排脚本和执行规则的权威来源；Unity 内的平台实现随工程版本管理。暂不引入 Jenkins。
+
+## 发起会话限制（正式执行前必查）
+
+开始、恢复发布相关工作及每次正式受控操作前，读取当前Skill和项目最新适用角色/路由规范，不沿用旧上下文的执行权限。规则更新只维护权威正文，不全量通知子会话，也不为同步唤醒或逐一收回执；仅紧急且实际影响在途工作的变更，才按授权定向通知受影响者。普通机器回执静默写原权威记录，不打断真人话题或重复确认；必要风险、失败和真实人审仍按需报告。
+
+- 正式构建、Player/底座生成、小游戏/WebGL导出、内容热更、部署上传、发布指针修改及回退，只能由用户或工程规范明确绑定的**构建发布专项会话**或**项目统筹会话**发起。普通业务、美术、UI、性能、框架研发或规划会话不得因收到用户“构建热更新”等要求，就在原会话直接启动这些操作。
+- 执行前从工程 AGENTS、正式构建规范或可核对的真人指派确认当前会话身份和职责；记录绑定依据，不能自行把当前会话声明成发布专项，也不能用事务 owner 字符串、Skill已加载、旧发布经历或用户在普通会话提出发布需求来代替角色绑定。身份不明只做只读核查，不启动正式流水线。
+- 非上述角色收到执行请求时，携真人原话/消息来源、工程与环境、范围及“仅构建/不发布”等限制，按项目已授权路由一次转交统筹或发布专项，保留回执；不得先构建后转交，不要求用户重复发令。缺路由或投递授权时保留请求并说明缺失条件，不擅自执行或投递。咨询、只读 inspect/verify/dry-run、已授权工具维护和隔离夹具测试仍可在原会话完成，不得借自测名义运行正式流水线。
+- 项目已指定唯一发布执行者时，统筹可登记、去重和派发请求，实际构建发布仍只由该唯一专项执行；“统筹可以发起”不产生第二执行入口。未指定唯一执行者的项目，统筹是否直接执行依其既有明确授权，角色本身不授予发布权限。
+- 以上是会话遵循 Skill 时必须执行的角色检查与转交规则，不是操作系统级身份认证；底层事务脚本仍承担互斥/幂等，不宣称已经从技术上认证或封锁任意其他会话。
 
 ## 确认任务
 
@@ -24,18 +34,28 @@ description: Build and release standardized Unity projects through conversation-
 
 沿用用户已授权范围，不逐步重复确认。维护工具、检查状态不等于授权远端发布。选择内容或底座构建时说明证据，不能只因 DLL 编译成功就判定兼容。目标环境缺失、无法判定兼容或有冲突的发布状态时，完成只读检查后精简询问。
 
+## 可验收测试包的交付约定
+
+用户要求可运行、可验收的新底座测试包时，构建前核对该包固定启动地址、匹配底座的资源和入口映射，以及目标测试环境的部署授权。按项目已确认的语义完成构建、资源部署/校验和匹配入口后再交验，不能只导出一个缺资源/缺映射的包让用户尝试验收，也不主动推荐使验收链断开的“只出包不部署”话术。完整目标和部署权限已明确时连续完成，不逐步重复询问COS上传或指针操作。用户明确仅要离线候选或禁止上传时仍遵守，构建前就说明其不能完成运行验收，不能把相反限制默默取消；未配置测试环境或权限不明时先给具体方案。部署测试资源不等于上传微信平台或提审，旧底座映射及指针继续保护。项目特定默认语义在项目规范维护，不用本案例覆盖其他项目的“构建”默认解释。
+
 ## 执行与核验
 
+- 已安装统一资源治理 Gate 的工程，按 [资源治理发布门禁](references/资源治理发布门禁.md) 完成完整检查并复用有效证据；不要在受控入口之外再重复调用同一检查。退出2/3仍阻断，历史例外沿用该参考的精确批准机制，不缩范围或修改永久规则。
+
 - 通用脚本使用显式 ProjectPath，参数来自 `ProjectSettings/FrameworkPlatform.json`；不将个人盘符、域名、AppID 写入通用实现。
-- `Invoke-GameBuild.ps1` 提交到已打开的目标 Unity；同一工程只允许一个请求。按返回的 requestId 读取结果，旧结果不能作为本次成功。`-WhatIf` 预检而不提交。
-- 长时间构建分次读取结果并更新进度，不修改脚本来重复触发构建。超时不自动重提，不关闭用户启动的 Unity。
+- 正式构建/部署先读 [完整发布事务](references/完整发布事务.md)。显式绑定的项目使用共享账本（未绑定项目保留既有流程），登记原始请求、冻结输入及线上基线，再通过 TransactionId/Owner 执行。整个工程/环境串行，覆盖 bootstrap 与各 base current；冻结后新需求排下一批，未知操作不自动抢锁重提。
+- `Invoke-GameBuild.ps1` 提交到已打开的目标 Unity；按返回的 requestId 核验并完成账本步骤，旧结果不能作为本次成功。`-WhatIf` 预检而不提交。
+- 长时间构建分次读取结果并更新进度。中断或事务接续先核对已有候选、输入和成功回执；仍匹配则直接继续缺失步骤，不因会话/事务变化重建，不伪造新构建回执。超时不自动重提，不关闭用户启动的 Unity。
 - `scripts/validate_release.py --project <路径>` 只读验证候选、Catalog、Bundle 和包内底座标识；通过后才能切换本地指针。发布后加 `--published` 检查本地指针。
 - COS 部署读取 [COS发布流程](references/COS发布流程.md)，使用 `scripts/publish_cos.py` 按 stage → 本地发布 → activate 顺序执行，凭证留在工程外。
-- Git Pages 远端发布由当前会话按平台流程执行，脚本不暗中提交推送。检查目标分支、项目相对目录、已暂存和待推送提交，不带入其他项目修改。
+- Git Pages 远端发布由通过上述角色检查的实际执行会话按平台流程执行，脚本不暗中提交推送。检查目标分支、项目相对目录、已暂存和待推送提交，不带入其他项目修改。
+- 围绕本次改动及必要运行依赖验收，复用已覆盖且输入未变的证据。额外诊断发现的无关既存问题留在原报告，不自动扩修、对照构建或阻塞发布；新增/恶化问题、目标运行阻塞及版本安全门禁仍处理。此区分不豁免正式门禁错误，不将未检查部分写成通过。
 - 不自动删除历史资源，不覆盖旧版本；保留各底座的 AOT、桥接与构建记录。归档和回退见规范。
 - Skill 自检使用临时夹具及只读案例，不对真实工程提交构建请求或远端变更，除非用户要求。
 
 ## 维护与交付
+
+- 构建发布记录必须按 [构建发布规范的归档条款](references/构建发布规范.md#归档和回退) 写入对应底座/内容版本目录；build根层仅保留当前`wechat-delivery.json`和简短导航。不得把候选、兼容检查、远端验证、上传/激活收据或临时报告继续平铺到根层；临时工具和重定向验证输出同样遵守。
 
 - 工程生成交给 game-framework-toolchain；日常构建不重新导出或复制工程。平台协议变更同时检查生产端与客户端，不自动修改游戏玩法。
 - 兼容入口使用 `assets/Build-WeChatHotUpdate.ps1`，只转发到此 Skill。Unity 适配升级单独完成一次编译核验，不在每次构建前同步 Editor 源码。

@@ -15,7 +15,7 @@
 - [`docs/UI功能逻辑规范.md`](docs/UI功能逻辑规范.md)：BasePanel 生命周期、监听命名和 C# 换行风格。
 - [`docs/游戏业务与配置规范.md`](docs/游戏业务与配置规范.md)：业务 Model/VO、Luban 配置分层、运行时加载与新表接入。
 - [`docs/场景管理规范.md`](docs/场景管理规范.md)：场景逻辑元素、Timer 驱动、视窗同步及逻辑与表现分离。
-- [`docs/AIUI编辑器队列规范.md`](docs/AIUI编辑器队列规范.md)：Unity 状态识别、Play 控制、请求提交和进程边界。
+- [`docs/AIUI编辑器队列规范.md`](docs/AIUI编辑器队列规范.md)：Unity 状态识别、Play 控制、请求提交和进程边界；测试相机屏幕输出、截图恢复及结束/异常清理。
 - [`docs/README.md`](docs/README.md)：专项文档索引。
 
 - [`docs/运行时框架与加载规范.md`](docs/运行时框架与加载规范.md)：程序集边界、异步加载、Timer、帧动画及 UI 绑定。
@@ -63,7 +63,7 @@ game-framework-toolchain/
 | 渲染管线 | Built-in，禁止 URP |
 | 入口类 | `RookieEngine` |
 | 场景 | `GameEntrance`、`UIEditor` 两个场景 |
-| 后台运行 | Player Settings 默认启用 Run In Background，使桌面游戏失焦后继续运行 |
+| 后台运行 | Player Settings 默认启用 Run In Background，使桌面游戏失焦后继续运行；持久设置检查见[模板与导出规范](docs/模板与导出规范.md) |
 | Input System | `activeInputHandler: 2`（Both） |
 | Addressables | 按生命周期和阶段分组；旧模板五组为迁移起点，微信策略另设 configData、公共字体及程序集资源组 |
 | 配置 | 模板只带通用必需配置，不迁样例业务表；微信使用 configData 独立分组并在 LoginPanel 打开时加载初始化 |
@@ -96,7 +96,7 @@ powershell -ExecutionPolicy Bypass -File Tools/Generate-GameFrameworkProject.ps1
 - 默认拒绝覆盖；只有用户明确授权时使用 `-Force`。
 - 导出器从仓库 `ThirdParty/TexturePacker` 部署已锁定版本到 `Project/Tools/TexturePacker/{platform}`；样例工程不得依赖个人工具目录或 Skill 仓库绝对路径。
 - Addressables 不允许跳过；每次导出都从当前模板现场构建。
-- 最终交付只保留 `Library/com.unity.addressables`；其他 Library 内容由接收方首次打开时重新生成。
+- Library仅清理已知可再生缓存，保留AssetDatabase索引、版本元数据与Addressables；清理后和最终交付路径均须实际重开通过，之后不再破坏已验证状态。
 - Unity 未显式指定时，按模板版本在常见安装目录自动查找。
 - 任何编译错误、批处理错误、缺失 marker 或无 bundle 均视为导出失败。
 - 导出目标只有 `{OutputRoot}/{ProjectName}`，staging 不出现在目标目录。
@@ -126,3 +126,8 @@ powershell -ExecutionPolicy Bypass -File Tools/Test-GameFrameworkTemplate.ps1
 涉及当前帧阴影、投影锚点、镜像、离地位移或联合剔除时，读取[帧阴影组件规范](docs/帧阴影组件规范.md)。
 
 涉及设计尺寸、全屏、safeContent、安全区或平台操作按钮避让时，读取[UI视窗与安全区适配规范](docs/UI视窗与安全区适配规范.md)。项目参数不得写入通用规则；文档与模板实现迁移分开验收。
+
+
+涉及公共瞬时提示、被动UI宿主或ResourcePresentation资源策略时，读取[公共滚动提示与资源策略](docs/公共滚动提示与资源策略.md)，保留持续状态说明与需要选择的确认框。
+
+涉及微信启动页、背景或进度条主题及其导出时，读取[微信启动页主题规范](docs/微信启动页主题规范.md)。

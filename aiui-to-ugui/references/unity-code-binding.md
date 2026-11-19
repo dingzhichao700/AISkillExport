@@ -6,6 +6,8 @@ explicit member-selection policy is available.
 
 ## Establish the project convention
 
+Before adding custom serialized image fields or editor assembly setters, apply [resource production and consumption](resource-production-and-consumption.md). UIBinder component references are distinct from serialized Sprite asset fields.
+
 ### Local C# style
 
 Use the accepted reference panel as the formatting authority. Preserve its
@@ -154,7 +156,8 @@ surface. Never replace or truncate its user-authored implementation.
 
 ## Validate
 
-Verify, using the project's supported tooling where available:
+Include the following applicable items in the consolidated candidate check in
+`pipeline.md`, using supported project tooling; do not run a separate duplicate suite:
 
 - the same-named class compiles in the correct assembly;
 - the Prefab has exactly the expected `UIBinder` on its root;

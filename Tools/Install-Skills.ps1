@@ -11,7 +11,10 @@ param(
 )
 
 $skillNames = @(
+    "game-project-coordination",
+    "game-project-planning",
     "aiui-to-ugui",
+    "game-ui-reference-extraction",
     "game-art-asset-pipeline",
     "game-feature-logic",
     "game-framework-toolchain",

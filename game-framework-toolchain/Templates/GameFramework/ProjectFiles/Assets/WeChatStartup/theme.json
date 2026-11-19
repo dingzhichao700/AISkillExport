@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "enabled": true,
+  "themeId": "neutral-default",
+  "backgroundImage": "",
+  "backgroundColor": "#10151c",
+  "brandingImage": "",
+  "bar": {
+    "designWidth": 720,
+    "widthRatio": 0.76,
+    "height": 8,
+    "bottomRatio": 0.085,
+    "trackColor": "#20262e",
+    "borderColor": "#647080",
+    "borderAlpha": 0.745098,
+    "borderWidth": 1,
+    "fillTop": "#edf2f7",
+    "fillBottom": "#8c9bab",
+    "glowColor": "#b6c4d2",
+    "glowAlpha": 0.0470588,
+    "glowLayers": 0,
+    "trackImage": "",
+    "fillImage": ""
+  },
+  "text": {
+    "fontSize": 12,
+    "color": "#f5fafc",
+    "gap": 8
+  },
+  "branding": {
+    "visible": true,
+    "width": 64,
+    "height": 23,
+    "bottom": 20
+  }
+}

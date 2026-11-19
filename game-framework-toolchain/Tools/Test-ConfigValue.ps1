@@ -10,7 +10,7 @@ try {
         "$project/Packages/com.code-philosophy.luban/Runtime/SimpleJSON/SimpleJSON.cs",
         "$project/Assets/Scripts/csharp/login/config/CfgManager.cs",
         "$project/Assets/Scripts/csharp/login/config/helper/ConfigValueHelper.cs",
-        "$project/Assets/Scripts/csharp/foundation/core/resource/constant/ResourceConst.cs",
+        "$project/Assets/Scripts/csharp/login/config/ResourceConst.cs",
         "$PSScriptRoot/Tests/ConfigValueRegression.cs"
     )
     $items = ($sources | ForEach-Object { '<Compile Include="' + [Security.SecurityElement]::Escape($_) + '" />' }) -join "`n"

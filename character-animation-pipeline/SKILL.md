@@ -5,8 +5,21 @@ description: Generate character animation assets from approved references via ex
 
 # Character animation pipeline
 
+For editable 3D models with skeletal Actions rendered offline, use the sibling `unit-3d-frame-animation` skill. Do not send an existing 3D animation through image-to-video or background extraction; this skill remains responsible for the video-based path and the shared delivery contract.
+
+
 Deliver coherent directional character animations, not independently imagined pose sheets.
 Treat user choices and approvals already in the conversation as authoritative.
+
+## Provider routing
+
+This is the only workflow that defaults to the QWEN/DashScope API for animation
+video generation (Bailian image-to-video); use the registered local credential CSV
+and applicable project queue. Static reference creation, directional stills, and
+reference edits default to the built-in Image model via `image_gen` and the
+`imagegen` / `game-art-asset-pipeline` skills. Do not route a static image through
+QWEN merely because it will later be used for animation. Supplied videos still
+follow the existing import/review/export workflow without a new model request.
 
 ## Contract and defaults
 
@@ -31,9 +44,10 @@ No default GIF, archive, full native-rate PNG delivery, or engine integration.
 1. **View/direction reference approval**, only if missing. Preserve character design
    across requested views. For example, a back-diagonal astronaut needs a consistent
    backpack, helmet back, leg angle, and accessories, not a mirrored front.
-   Use an available reference-image provider (the sibling game-art-asset-pipeline
-   skill supports Qwen), or accept a supplied image. This skill's scripts generate
-   videos, not reference art. Never silently switch image provider.
+   Use built-in Image via `image_gen` for missing static references, following the
+   `imagegen` and sibling `game-art-asset-pipeline` skills, or accept a supplied image.
+   This skill's QWEN scripts generate videos, not default static reference art.
+   Use a different static image API only if the user explicitly chooses it.
 2. **One motion-video approval.** Generate once or import an existing video. For a
    loop, inspect movement, select a complete semantic cycle, and present a repeated
    MP4 directly. Do not require a separate raw-video approval first. One-shot actions
@@ -65,7 +79,10 @@ Repair only affected directions; retain other approved versions. Read
 
 For Bailian read [provider-bailian.md](references/provider-bailian.md).
 `scripts/video_api.py` exposes validate, submit and poll; submit never retries POST.
-Use the user's environment-variable name (default QWEN_ANI), never a key literal.
+Read the user's local credential CSV through `key_file` (default
+`E:/开发凭证（勿删勿上传）/QWEN-apiKey-8436848.csv`), never an environment variable
+or key literal. Never copy/upload the CSV or persist/print its contents; send the key
+only in the official API Authorization header.
 Announce each paid submission, reuse existing authorization, and save returned task IDs.
 Poll timeouts/network errors resume the SAME task. A submit without an ID is unknown:
 stop and report, do not automatically buy another attempt or switch provider.

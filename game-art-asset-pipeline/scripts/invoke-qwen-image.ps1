@@ -11,6 +11,7 @@ param(
     [string]$Model = 'qwen-image-plus',
     [ValidatePattern('^\d+\*\d+$')]
     [string]$Size = '1024*1024',
+    [string]$CredentialFile = 'E:\开发凭证（勿删勿上传）\QWEN-apiKey-8436848.csv',
     [switch]$ValidateOnly
 )
 
@@ -18,9 +19,8 @@ $ErrorActionPreference = 'Stop'
 $submitUri = 'https://dashscope.aliyuncs.com/api/v1/services/aigc/text2image/image-synthesis'
 $taskUriBase = 'https://dashscope.aliyuncs.com/api/v1/tasks/'
 
-if (-not (Test-Path Env:QWEN_ANI)) {
-    throw 'QWEN_ANI is not configured.'
-}
+. (Join-Path $PSScriptRoot 'read-qwen-credential.ps1')
+$apiKey = Read-QwenCredential -CredentialFile $CredentialFile
 
 $trimmedPrompt = $Prompt.Trim()
 if ([string]::IsNullOrWhiteSpace($trimmedPrompt)) {
@@ -47,12 +47,12 @@ if (($payload.input.Keys -contains 'messages') -or
 }
 
 if ($ValidateOnly) {
-    Write-Output 'VALIDATION_SUCCEEDED provider=QWEN model=qwen-image-plus schema=input.prompt credential=QWEN_ANI_CONFIGURED'
+    Write-Output 'VALIDATION_SUCCEEDED provider=QWEN model=qwen-image-plus schema=input.prompt credential=CSV_VALIDATED'
     exit 0
 }
 
 $headers = @{
-    Authorization = 'Bearer ' + $env:QWEN_ANI
+    Authorization = 'Bearer ' + $apiKey
     'X-DashScope-Async' = 'enable'
 }
 $body = $payload | ConvertTo-Json -Depth 6
@@ -65,7 +65,7 @@ if ([string]::IsNullOrWhiteSpace($taskId)) {
 $status = 'PENDING'
 for ($attempt = 0; $attempt -lt 120; $attempt++) {
     Start-Sleep -Seconds 3
-    $result = Invoke-RestMethod -Method Get -Uri ($taskUriBase + $taskId) -Headers @{ Authorization = 'Bearer ' + $env:QWEN_ANI }
+    $result = Invoke-RestMethod -Method Get -Uri ($taskUriBase + $taskId) -Headers @{ Authorization = 'Bearer ' + $apiKey }
     $status = $result.output.task_status
     if ($status -eq 'SUCCEEDED') { break }
     if ($status -in @('FAILED', 'CANCELED', 'UNKNOWN')) {

@@ -1,0 +1,63 @@
+'use strict';
+// Candidate only: offscreen 2D skin, uploaded to the already-owned screen WebGL context.
+
+const {normalizeTheme,rgb}=require('./theme');
+function drawSkin(ctx,assets,width,height,progress,text,uiScale=width/720,statusScale=width/360,theme=normalizeTheme()) {
+  const b=theme.bar;uiScale=width/b.designWidth;ctx.clearRect(0,0,width,height);ctx.fillStyle=theme.backgroundColor;ctx.fillRect(0,0,width,height);
+  const bg=assets.background;if(bg){const s=Math.max(width/bg.width,height/bg.height);ctx.drawImage(bg,(width-bg.width*s)/2,(height-bg.height*s)/2,bg.width*s,bg.height*s);}
+  const x=width*(1-b.widthRatio)/2,y=height*(1-b.bottomRatio),w=width*b.widthRatio,h=b.height*uiScale,p=Math.min(1,Math.max(0,progress)),fill=w*p;
+  if(assets.track)ctx.drawImage(assets.track,x,y,w,h);else{ctx.fillStyle=b.trackColor;ctx.fillRect(x,y,w,h);if(b.borderWidth){ctx.strokeStyle=b.borderColor;ctx.globalAlpha=b.borderAlpha;ctx.lineWidth=b.borderWidth*uiScale;ctx.strokeRect(x,y,w,h);ctx.globalAlpha=1;}}
+  if(fill>0){for(let j=b.glowLayers;j>=1;j--){ctx.fillStyle=b.glowColor;ctx.globalAlpha=b.glowAlpha;ctx.fillRect(x-j*uiScale,y-j*uiScale,fill+2*j*uiScale,h+2*j*uiScale);}ctx.globalAlpha=1;
+    if(assets.fill)ctx.drawImage(assets.fill,0,0,assets.fill.width*p,assets.fill.height,x,y,fill,h);else{const g=ctx.createLinearGradient(0,y,0,y+h);g.addColorStop(0,b.fillTop);g.addColorStop(1,b.fillBottom);ctx.fillStyle=g;ctx.fillRect(x,y,fill,h);}}
+  if(text){ctx.font=(theme.text.fontSize*statusScale)+'px sans-serif';ctx.textAlign='center';ctx.textBaseline='bottom';ctx.fillStyle=theme.text.color;ctx.fillText(text,width/2,y-theme.text.gap*statusScale,width*.9);}
+  const logo=theme.branding;if(logo.visible&&assets.branding)ctx.drawImage(assets.branding,(width-logo.width*statusScale)/2,height-(logo.bottom+logo.height)*statusScale,logo.width*statusScale,logo.height*statusScale);
+}
+function createBlitter(gl,canvas) {
+  const is2=typeof gl.createVertexArray==='function';
+  const vs=is2?'#version 300 es\nin vec2 p;out vec2 uv;void main(){uv=(p+1.)*.5;gl_Position=vec4(p,0.,1.);}':'attribute vec2 p;varying vec2 uv;void main(){uv=(p+1.)*.5;gl_Position=vec4(p,0.,1.);}';
+  const header=is2?'#version 300 es\nprecision mediump float;in vec2 uv;out vec4 color;':'precision mediump float;varying vec2 uv;';
+  const fs=header+`uniform sampler2D img;uniform float skin;uniform float fraction;uniform vec2 size;uniform vec4 bar;uniform vec3 fillTop;uniform vec3 fillBottom;uniform vec3 glowColor;uniform float glowAlpha;uniform float glowLayers;uniform float glowStep;uniform sampler2D fillImg;uniform float texturedFill;
+    void main(){vec2 t=vec2(uv.x,1.-uv.y);vec4 c=${is2?'texture':'texture2D'}(img,t);
+      if(skin>0.5 && fraction>0.){vec2 p=t*size;float s=glowStep;float x=bar.x;float y=bar.y;float w=bar.z*clamp(fraction,0.,1.);float h=bar.w;
+        for(int j=1;j<=16;j++){if(float(j)>glowLayers)break;float g=float(j)*s;if(p.x>=x-g&&p.x<x+w+g&&p.y>=y-g&&p.y<y+h+g)c=vec4(mix(c.rgb,glowColor,glowAlpha),1.);}
+        if(texturedFill<0.5&&p.x>=x&&p.x<x+w&&p.y>=y&&p.y<y+h)c=vec4(mix(fillTop,fillBottom,clamp((p.y-y)/h,0.,1.)),1.);
+      if(texturedFill>0.5&&p.x>=x&&p.x<x+w&&p.y>=y&&p.y<y+h){vec4 f=${is2?'texture':'texture2D'}(fillImg,(p-bar.xy)/bar.zw);c=vec4(mix(c.rgb,f.rgb,f.a),1.);}
+      }${is2?'color':'gl_FragColor'}=c;}`;  const shaders=[];function compile(type,source){const s=gl.createShader(type);shaders.push(s);gl.shaderSource(s,source);gl.compileShader(s);if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw Error(gl.getShaderInfoLog(s));return s;}
+  const program=gl.createProgram();gl.attachShader(program,compile(gl.VERTEX_SHADER,vs));gl.attachShader(program,compile(gl.FRAGMENT_SHADER,fs));gl.bindAttribLocation(program,0,'p');gl.linkProgram(program);if(!gl.getProgramParameter(program,gl.LINK_STATUS))throw Error(gl.getProgramInfoLog(program));
+  const buffer=gl.createBuffer(),texture=gl.createTexture(),fillTexture=gl.createTexture(),vao=is2?gl.createVertexArray():null;
+  const oldBuffer=gl.getParameter(gl.ARRAY_BUFFER_BINDING);gl.bindBuffer(gl.ARRAY_BUFFER,buffer);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),gl.STATIC_DRAW);gl.bindBuffer(gl.ARRAY_BUFFER,oldBuffer);
+  function draw(options={}){const theme=options.theme||normalizeTheme(),b=theme.bar,scale=canvas.width/b.designWidth;
+    const caps=[gl.BLEND,gl.DEPTH_TEST,gl.SCISSOR_TEST,gl.CULL_FACE,gl.STENCIL_TEST];if(is2)caps.push(gl.RASTERIZER_DISCARD);
+    const state={caps:caps.map(c=>gl.isEnabled(c)),program:gl.getParameter(gl.CURRENT_PROGRAM),framebuffer:gl.getParameter(gl.FRAMEBUFFER_BINDING),viewport:gl.getParameter(gl.VIEWPORT),buffer:gl.getParameter(gl.ARRAY_BUFFER_BINDING),active:gl.getParameter(gl.ACTIVE_TEXTURE),flip:gl.getParameter(gl.UNPACK_FLIP_Y_WEBGL),premult:gl.getParameter(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL),alignment:gl.getParameter(gl.UNPACK_ALIGNMENT),colorMask:gl.getParameter(gl.COLOR_WRITEMASK),vao:is2?gl.getParameter(gl.VERTEX_ARRAY_BINDING):null};
+    if(is2){state.readFramebuffer=gl.getParameter(gl.READ_FRAMEBUFFER_BINDING);state.unpackBuffer=gl.getParameter(gl.PIXEL_UNPACK_BUFFER_BINDING);}
+    gl.activeTexture(gl.TEXTURE0);state.texture=gl.getParameter(gl.TEXTURE_BINDING_2D);if(is2){state.sampler=gl.getParameter(gl.SAMPLER_BINDING);state.unpackKeys=[gl.UNPACK_ROW_LENGTH,gl.UNPACK_SKIP_PIXELS,gl.UNPACK_SKIP_ROWS,gl.UNPACK_IMAGE_HEIGHT,gl.UNPACK_SKIP_IMAGES];state.unpackValues=state.unpackKeys.map(k=>gl.getParameter(k));}
+    if(!is2)state.attr={enabled:gl.getVertexAttrib(0,gl.VERTEX_ATTRIB_ARRAY_ENABLED),buffer:gl.getVertexAttrib(0,gl.VERTEX_ATTRIB_ARRAY_BUFFER_BINDING),size:gl.getVertexAttrib(0,gl.VERTEX_ATTRIB_ARRAY_SIZE),type:gl.getVertexAttrib(0,gl.VERTEX_ATTRIB_ARRAY_TYPE),normalized:gl.getVertexAttrib(0,gl.VERTEX_ATTRIB_ARRAY_NORMALIZED),stride:gl.getVertexAttrib(0,gl.VERTEX_ATTRIB_ARRAY_STRIDE),offset:gl.getVertexAttribOffset(0,gl.VERTEX_ATTRIB_ARRAY_POINTER)};
+    gl.activeTexture(gl.TEXTURE1);state.texture1=gl.getParameter(gl.TEXTURE_BINDING_2D);if(is2)state.sampler1=gl.getParameter(gl.SAMPLER_BINDING);gl.activeTexture(gl.TEXTURE0);
+    try{
+      if(is2){gl.bindVertexArray(vao);gl.bindBuffer(gl.PIXEL_UNPACK_BUFFER,null);gl.bindSampler(0,null);state.unpackKeys.forEach(k=>gl.pixelStorei(k,0));}
+      gl.bindFramebuffer(gl.FRAMEBUFFER,null);gl.viewport(0,0,gl.drawingBufferWidth,gl.drawingBufferHeight);caps.forEach(c=>gl.disable(c));gl.colorMask(true,true,true,true);gl.useProgram(program);
+      gl.bindBuffer(gl.ARRAY_BUFFER,buffer);gl.enableVertexAttribArray(0);gl.vertexAttribPointer(0,2,gl.FLOAT,false,0,0);
+      gl.bindTexture(gl.TEXTURE_2D,texture);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+      gl.pixelStorei(gl.UNPACK_ALIGNMENT,1);gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,false);gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL,false);if(options.upload!==false)gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,canvas);gl.uniform1i(gl.getUniformLocation(program,'img'),0);gl.uniform1f(gl.getUniformLocation(program,'skin'),options.skin?1:0);gl.uniform1f(gl.getUniformLocation(program,'fraction'),options.progress||0);gl.uniform2f(gl.getUniformLocation(program,'size'),canvas.width,canvas.height);
+      gl.uniform4f(gl.getUniformLocation(program,'bar'),canvas.width*(1-b.widthRatio)/2,canvas.height*(1-b.bottomRatio),canvas.width*b.widthRatio,b.height*scale);
+      for(const key of ['fillTop','fillBottom','glowColor'])gl.uniform3fv(gl.getUniformLocation(program,key),rgb(b[key]));
+      gl.uniform1f(gl.getUniformLocation(program,'glowAlpha'),b.glowAlpha);gl.uniform1f(gl.getUniformLocation(program,'glowLayers'),b.glowLayers);gl.uniform1f(gl.getUniformLocation(program,'glowStep'),scale);
+      gl.activeTexture(gl.TEXTURE1);if(is2)gl.bindSampler(1,null);gl.bindTexture(gl.TEXTURE_2D,fillTexture);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+      if(options.upload!==false){if(options.fillImage)gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,options.fillImage);else gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,1,1,0,gl.RGBA,gl.UNSIGNED_BYTE,new Uint8Array([0,0,0,0]));}
+      gl.uniform1i(gl.getUniformLocation(program,'fillImg'),1);gl.uniform1f(gl.getUniformLocation(program,'texturedFill'),options.fillImage?1:0);gl.activeTexture(gl.TEXTURE0);gl.drawArrays(gl.TRIANGLES,0,3);
+    }finally{gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,state.texture1);if(is2)gl.bindSampler(1,state.sampler1);gl.activeTexture(gl.TEXTURE0);
+      if(is2)gl.bindVertexArray(state.vao);else{if(state.attr.buffer){gl.bindBuffer(gl.ARRAY_BUFFER,state.attr.buffer);gl.vertexAttribPointer(0,state.attr.size,state.attr.type,state.attr.normalized,state.attr.stride,state.attr.offset);}if(!state.attr.enabled)gl.disableVertexAttribArray(0);}
+      if(is2){gl.bindBuffer(gl.PIXEL_UNPACK_BUFFER,state.unpackBuffer);gl.bindSampler(0,state.sampler);state.unpackKeys.forEach((k,i)=>gl.pixelStorei(k,state.unpackValues[i]));}gl.bindBuffer(gl.ARRAY_BUFFER,state.buffer);gl.bindTexture(gl.TEXTURE_2D,state.texture);gl.activeTexture(state.active);gl.useProgram(state.program);gl.bindFramebuffer(gl.FRAMEBUFFER,state.framebuffer);if(is2)gl.bindFramebuffer(gl.READ_FRAMEBUFFER,state.readFramebuffer);gl.viewport(...state.viewport);gl.colorMask(...state.colorMask);gl.pixelStorei(gl.UNPACK_ALIGNMENT,state.alignment);gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,state.flip);gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL,state.premult);caps.forEach((c,i)=>state.caps[i]?gl.enable(c):gl.disable(c));
+    }
+  }
+  return {draw,destroy(){gl.deleteTexture(texture);gl.deleteTexture(fillTexture);gl.deleteBuffer(buffer);if(vao)gl.deleteVertexArray(vao);gl.deleteProgram(program);shaders.forEach(s=>gl.deleteShader(s));}};
+}
+function createView({wx,gl,screen,request,cancel,onError,background='images/background.jpg',branding='images/unity_logo.png',theme=normalizeTheme()}) {
+  let offscreen,ctx,blitter,assets,disposed=false,lastText=null,statusScale=1;
+  function loadImage(src){if(!src)return Promise.resolve(null);return new Promise((resolve,reject)=>{const img=wx.createImage();img.onload=()=>resolve(img);img.onerror=()=>reject(Error('Skin image failed: '+src));img.src=src;});}
+  return {request,cancel,onError,async load(){
+    offscreen=wx.createCanvas();offscreen.width=Math.min(720,screen.width);offscreen.height=Math.round(screen.height*offscreen.width/screen.width);statusScale=offscreen.width/wx.getSystemInfoSync().windowWidth;ctx=offscreen.getContext('2d');if(!ctx)throw Error('Offscreen 2D unavailable');
+    const images=await Promise.all([loadImage(background),loadImage(branding),loadImage(theme.bar.trackImage),loadImage(theme.bar.fillImage)]);if(disposed)return;assets={background:images[0],branding:images[1],track:images[2],fill:images[3]};blitter=createBlitter(gl,offscreen);
+  },draw(p,text){if(disposed||!assets||!blitter)return;const upload=text!==lastText;if(upload){drawSkin(ctx,assets,offscreen.width,offscreen.height,0,text,offscreen.width/theme.bar.designWidth,statusScale,theme);lastText=text;}blitter.draw({skin:true,progress:p,upload,theme,fillImage:assets.fill});},destroy(){disposed=true;if(blitter){blitter.destroy();blitter=null;}}};
+}
+module.exports={drawSkin,createBlitter,createView};

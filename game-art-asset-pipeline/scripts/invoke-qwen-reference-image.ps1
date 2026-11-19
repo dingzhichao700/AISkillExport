@@ -16,15 +16,17 @@ param(
     [string]$NegativePrompt = '像素画，像素风，8-bit，16-bit，阶梯锯齿，马赛克，低分辨率，文字，水印，投影，尾焰，烟雾，场景，透视斜视角',
     [ValidateSet('1K', '2K')]
     [string]$Size = '1K',
+    [string]$CredentialFile = 'E:\开发凭证（勿删勿上传）\QWEN-apiKey-8436848.csv',
+    [ValidateRange(10,600)]
+    [int]$TimeoutSec = 180,
     [switch]$ValidateOnly
 )
 
 $ErrorActionPreference = 'Stop'
 $submitUri = 'https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation'
 
-if (-not (Test-Path Env:QWEN_ANI)) {
-    throw 'QWEN_ANI is not configured.'
-}
+. (Join-Path $PSScriptRoot 'read-qwen-credential.ps1')
+$apiKey = Read-QwenCredential -CredentialFile $CredentialFile
 
 $trimmedPrompt = $Prompt.Trim()
 if ([string]::IsNullOrWhiteSpace($trimmedPrompt)) {
@@ -94,18 +96,22 @@ $payload = @{
     }
 }
 
+if ($Model -in @('wan2.7-image','wan2.7-image-pro')) {
+    $payload.parameters = @{ size=$Size; n=1; enable_sequential=$false; watermark=$false }
+}
+
 if ($payload.input.messages.Count -ne 1 -or $payload.input.messages[0].content.Count -lt 2) {
     throw 'Invalid local request schema for QWEN reference-image generation.'
 }
 
 if ($ValidateOnly) {
-    Write-Output "VALIDATION_SUCCEEDED provider=QWEN model=$Model schema=input.messages references=$($ReferenceImagePath.Count) credential=QWEN_ANI_CONFIGURED"
+    Write-Output "VALIDATION_SUCCEEDED provider=QWEN model=$Model schema=input.messages references=$($ReferenceImagePath.Count) credential=CSV_VALIDATED"
     exit 0
 }
 
-$headers = @{ Authorization = 'Bearer ' + $env:QWEN_ANI }
+$headers = @{ Authorization = 'Bearer ' + $apiKey }
 $body = $payload | ConvertTo-Json -Depth 10 -Compress
-$result = Invoke-RestMethod -Method Post -Uri $submitUri -Headers $headers -ContentType 'application/json' -Body $body
+$result = Invoke-RestMethod -Method Post -Uri $submitUri -Headers $headers -ContentType 'application/json' -Body $body -TimeoutSec $TimeoutSec -MaximumRetryCount 0
 $imageUrl = $result.output.choices[0].message.content | Where-Object { $_.type -eq 'image' } | Select-Object -First 1 -ExpandProperty image
 if ([string]::IsNullOrWhiteSpace($imageUrl)) {
     throw 'QWEN reference-image generation succeeded but returned no image URL.'
@@ -116,5 +122,5 @@ $outputDirectory = [System.IO.Path]::GetDirectoryName($resolvedOutput)
 if (-not [string]::IsNullOrWhiteSpace($outputDirectory)) {
     New-Item -ItemType Directory -Force -Path $outputDirectory | Out-Null
 }
-Invoke-WebRequest -Uri $imageUrl -OutFile $resolvedOutput
+Invoke-WebRequest -Uri $imageUrl -OutFile $resolvedOutput -TimeoutSec 90 -MaximumRetryCount 0
 Write-Output "GENERATION_SUCCEEDED output=$resolvedOutput provider=QWEN model=$Model schema=input.messages references=$($ReferenceImagePath.Count)"

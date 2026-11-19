@@ -5,61 +5,57 @@ description: Build or continue a Unity uGUI presentation layer from a game UI re
 
 # AIUI to Unity uGUI
 
-Run the workflow as a sequence of explicit artifacts and approval gates. Keep the
-process reversible and do not invent project-specific rules.
+Run the workflow as a sequence of explicit artifacts and approval gates. Before UI review or delivery, apply [approved baselines, annotated differences and candidate promotion](references/review-baseline-and-diff.md). Keep the process reversible and do not invent project-specific rules.
 
 Non-UI game art such as characters, aircraft, enemies, equipment, projectiles,
 world objects, gameplay icons, effects, textures, and progression series belongs to
 `game-art-asset-pipeline`. This Skill owns visual assets only when they are part of a UI
 design or presentation-layer delivery.
 
+## Existing-screen revisions
+
+Declare whether this is a new UI, an existing-screen revision, or a local fix.
+For revisions, read [references/existing-screen-revision.md](references/existing-screen-revision.md)
+before export or integration. Component replacement alone does not complete a screen revision.
+
+## Component and Prefab planning
+
+For new-screen/whole-screen design or changes to component boundaries, ownership,
+nesting, reuse, or state structure, read
+[references/component-prefab-planning.md](references/component-prefab-planning.md).
+Include the diagram and revisioned plan in the Blueprint checkpoint; carry the
+same identities into extraction, actual Figma instances, Unity Prefabs, and
+bindings. Reuse an approved plan for local fixes that leave those decisions
+unchanged. This adds no automatic extra approval round.
+
+## UI artwork representation
+
+Default to bitmap artwork. Before choosing or changing image/vector delivery,
+read [references/ui-resource-representation.md](references/ui-resource-representation.md).
+Visible native/procedural vector UI requires explicit prior human confirmation
+for the named elements; layout approval alone does not authorize that exception.
+
 ## Start a run
 
 For design dimensions, full-screen layout, safeContent, device safe areas or mini-game menu avoidance, read [references/viewport-safe-area.md](references/viewport-safe-area.md). Use project-owned dimensions and orientation; no sample resolution is a universal default.
 
 
-### 外部图像模型登记（首次使用时强制执行）
+### 图像生成默认入口
 
-本 Skill 遇到视觉稿、独立位图或其他图像生成需求时，一律使用用户登记的
-外部图像模型。禁止使用 Codex/ChatGPT 内置图像生成能力，除非用户明确取消
-这一限制。
-
-首次使用时，图像生成前只收集并登记以下信息：
-
-1. 提供方名称；
-2. 官方服务地址或官方接口文档；
-3. 模型名称；
-4. 保存 API Key 的环境变量名称。
-
-API Key 只保存在用户配置的安全环境变量中。环境变量只存 API Key，不承载
-服务地址、模型名称或其他公开连接配置。当前兼容约定为 `QWEN_ANI`；新提供方
-可使用清晰的提供方专属变量名，或使用通用名称 `AIUI_IMAGE_API_KEY`。
-
-只能在实际发送请求时使用 API Key。禁止在聊天、日志、manifest、源码、提示词
-或生成资源中打印、输出、复制、持久化或展示它的值。允许检查环境变量是否存在，
-并把提供方、服务地址、模型名称和环境变量名称作为非秘密配置记录到 run manifest。
-
-使用登记的提供方执行一次最小连通性与生成冒烟测试。正式生成前必须报告测试
-成功，或报告实际请求返回的具体失败。配置或测试失败时停止并通知用户，不得回退
-到 Codex/ChatGPT 内置图像生成能力。
-
-首次测试通过后，后续任务默认复用已登记的提供方和公开连接配置。只有用户明确
-授权更换提供方时，才重新登记并执行同样的测试。
-
-### 外部图像模型执行约定（强制）
-
-- QWEN 是当前登记的提供方时，先读取 `references/qwen-image-provider.md`，并且只能
-  使用 `scripts/invoke-qwen-image.ps1` 发起图像生成请求。禁止在任务中临时拼装请求体。
-- 当已批准的资产可作为画风、视角、主体或结构参考时，优先读取
-  `references/qwen-reference-image-provider.md`，并使用
-  `scripts/invoke-qwen-reference-image.ps1` 发起单张参考图生成。不要继续依赖纯文字提示词
-  猜测已批准的视觉语言。每次审核只设置 `n=1`，未经当前图片批准不得生成下一张。
-- 其他提供方没有固定调用器时，代理才可以依据已登记的官方协议构造请求；缺少调用器
-  本身不代表图像生成能力不可用。
-- 在尚未实际执行连通性请求或最小生成测试前，不得判断“无法生成图像”或
-  “图像能力不通”。
-- 只有凭据缺失、公开连接配置缺失、网络不可用、鉴权被拒绝、模型不可用或实际
-  请求失败，才可以阻塞图像生成；必须报告具体失败，不得把缺少内置脚本作为原因。
+- 生成或修复图片，默认直接调用内置 Image 图像模型（`image_gen`）。不读取环境变量，
+  不读取 API Key 文件，也不要求用户配置图片接口密钥。执行时读取 `imagegen` Skill，
+  按项目目录保存产物；能复用的已批准素材不重新生成。
+- 只有 `character-animation-pipeline` 的动画视频生成默认走 QWEN/DashScope；
+  静态图片不因用于动画参考而改走该接口。
+- Image 默认流程不要求读取 QWEN API Key、登记外部提供方、冒烟测试或进入 QWEN
+  队列。QWEN凭据缺失、队列暂停不阻塞内置 Image 生图。
+- 优先复用已批准参考，明确哪些是主体/画风/结构参考。透明素材请求真实Alpha并保留；
+  每个审核阶段只制作该阶段要求的候选，不改变既有Figma/Unity验收门槛。
+- 用户为当前任务明确选择外部图像API时才使用对应提供方。历史登记或凭据存在不能
+  作为默认选择；内置Image失败时报告，不静默回退其他API或CLI。
+- 旧QWEN调用器仅保留为显式外部模式：文生图读取 `references/qwen-image-provider.md`，
+  参考图读取 `references/qwen-reference-image-provider.md`；仅此模式适用对应接口、
+  凭据、队列及审批规则。凭据不得写入聊天、日志、manifest、源码或产物。
 
 1. Identify whether the request starts from UI design, an intermediate artifact,
    Unity export, or an approved Prefab/UIBinder that only needs view integration.
@@ -77,25 +73,30 @@ API Key 只保存在用户配置的安全环境变量中。环境变量只存 AP
 8. State the current stage, the inputs being used, and the next approval gate
    or verification checkpoint.
 
-### 图像提供方预检（每次生成前强制执行）
+### 图像生成前核对
 
-每次生成视觉稿或位图资源前：
-
-1. 检查已登记的 API Key 环境变量是否存在，不输出、复制、持久化或展示其值。
-2. 核对已登记的提供方、服务地址、模型名称和请求协议；缺少公开连接配置时先补齐，
-   不得猜测。
-   QWEN 必须核对为 `input.prompt` 字符串协议，不得使用 `input.messages`。
-3. 在 run manifest 中记录提供方、模型、环境变量名称、凭据是否已配置及预检结果，
-   但绝不记录 API Key。
-4. 实际调用外部图像模型前显式告知用户，然后执行最小测试或本次正式请求。
-5. 若提供方不可用或请求失败，报告具体错误并停止，不得静默切换提供方。
-6. 若没有已登记且已配置的外部提供方，图像生成前停止并请用户完成登记；不得默认
-   使用 Codex/ChatGPT 内置图像生成能力。
-7. 若实际使用的提供方与登记或用户指定的提供方不一致，废弃本次草稿，把 run 标记
-   为阻塞，并在继续前通知用户。
+核对本轮目标、已批准输入、尺寸/透明要求、产物路径及审核停止点；manifest记录
+实际使用的模型/工具和参考来源。默认Image路径不读API凭据，不请求外部测试。
+只有用户明确选择外部API时，才额外核对官方协议、凭据安全和适用队列；调用前
+说明上传内容及目标服务，未知结果不自动重发，不静默切换提供方。
 
 Accept partial runs. Resume from an existing artifact instead of recreating
-approved upstream work.
+approved upstream work. Apply the scoped execution and verification rules in
+`references/pipeline.md`: do not turn full-library governance or completion of
+general-purpose tooling into a UI-content prerequisite. The UI owner checks this
+batch against project-owned resource types, directories, Groups and bundle keys;
+project resource governance owns those rules and existing-asset migration.
+
+### Figma 插件交付与人工导入（必需）
+
+- 完整开发插件是目录：标准 `manifest.json` 加其引用的代码、UI和全部依赖；清单JSON与完整项目数据JSON不是同一种产物。不得将清单重命名成“完整插件.json”来暗示单文件完整性。
+- 直接给出该目录中 `manifest.json` 的可点击绝对路径，依赖由助手准备齐全；用户不用拼装，ZIP不替代入口。完整插件应包含当前已确认范围的完整界面，而非补丁；固定导入器＋项目数据另行标明，不混称。
+- 图片母版区只展示实际导出图片，保持纯净且每图唯一；结构组件与已有引用保留在隐藏技术区。来源分类、独立框/内容拆分、清单一致性及组合单入口核验按 `references/figma-import.md` 执行。
+- 每个界面使用固定短名称、目录和plugin id；版本显示在插件窗口。后续覆盖完整包并归档，不每版新增注册项。按figma-import.md核验迁移与历史注册清理。
+- 交付前执行 `scripts/validate_figma_delivery.py` 并核对整页重建范围、脚本语法和最终回复路径。详细规则见 `references/figma-import.md`。
+- 生成文件、程序检查、任务排队或完成回执不等于实际导入和结构通过。导入后核验真实图层及完整截图，用户批准该结构版本后才能进入Unity导出或结构对齐。
+- 用户手动导入为默认；未获明确授权不代操作Figma。分别记录安装/重启/任务提交/实际导入/结构批准，不让用户重复完成已完成步骤。
+
 
 ### Figma transport preflight (mandatory)
 
@@ -157,12 +158,11 @@ After an approved Prefab, UIBinder, and member set exist, continue with
 
 ## Use tools conservatively
 
-- 使用已经登记并通过冒烟测试的外部图像提供方。`QWEN_ANI` 存在时，只能在
-  QWEN 已登记为当前提供方且公开连接配置完整时将其用作 API Key。每个生成阶段前
-  完成提供方预检，并在 run manifest 中记录所选提供方，但不得记录密钥。
-- Do not silently switch image providers. Any unavailable provider, fallback,
-  or provider mismatch is a user-visible stop condition; report it before
-  generating or accepting artifacts.
+- Use built-in Image for bitmap generation/editing by default. Record the actual
+  tool and reference provenance; API keys and provider registration are not needed.
+- Honor an explicitly selected external provider for the current task; report a
+  failure without silently changing providers. Do not reuse an old external run's
+  provider setting as the default for a new Image task.
 - Use an existing Figma file, plugin, converter, or authenticated connection
   when the user supplies one. Do not install software or create unrelated Figma
   files without an explicit request.
@@ -187,8 +187,10 @@ After an approved Prefab, UIBinder, and member set exist, continue with
 - Inspect the target Unity project's governing instructions before writing.
 - For iterative Unity review, use the Stage 6 preview mode and the project's
   persistent `Library/AIUI` request queue when available. Do not use a temporary
-  Editor C# generator, pack atlases, register Addressables, or build Player
-  Content until the corresponding finalize or release checkpoint.
+  Editor C# generator. Static preview does not register Addressables. Runtime
+  integration may register only the assets required by the existing loader; this
+  is not a content build. Atlas finalization and Player Content builds follow the
+  separate checkpoints in `references/pipeline.md`.
 - Reuse the target project's existing code-binding and member-export mechanism.
   Do not introduce a new binding framework implicitly.
 - In the combined binding stage, create the same-named class, attach `UIBinder`,
@@ -211,6 +213,9 @@ IDs, Unity project paths, Prefabs, logs, credentials, or examples as skill
 resources. Add scripts or assets only after repeated use proves that a
 deterministic implementation or reusable template is required.
 
+## Resource production and consumption
+
+Before choosing/copying art, editing producers or custom image fields, and runtime delivery, read [resource production and consumption](references/resource-production-and-consumption.md). Follow project-specific persistence rules and update producers and consumers together. Before handing off formally generated or incrementally updated UI Prefabs, run a check of this batch's actual recursive Unity dependencies (AssetDatabase.GetDependencies). A formal Prefab must not depend on atlas production-source images such as `Assets/Art/atlasSource/`; use generated atlas Sprites or approved runtime loose Sprites instead. Report each offending Prefab → source image, and do not mark runtime delivery complete until this check passes. Normal source import and temporary visual preview remain allowed. Attach the actual check result; a missing or unexecuted check is not a pass. Use the project's existing check entry where available; this requirement does not authorize full-library cleanup.
 ## Finish each stage
 
 Before handing work to another stage, apply the authority and freshness rules

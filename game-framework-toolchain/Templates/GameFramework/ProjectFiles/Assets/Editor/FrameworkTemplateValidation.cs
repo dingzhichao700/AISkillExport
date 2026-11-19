@@ -13,6 +13,7 @@ public static class FrameworkTemplateValidation {
     private const string Key = "Framework.TemplateValidation";
     private static double deadline;
     private static bool requestedMain;
+    private static bool validatingCommonUI;
 
     static FrameworkTemplateValidation() {
         EditorApplication.playModeStateChanged += OnStateChanged;
@@ -37,6 +38,8 @@ public static class FrameworkTemplateValidation {
         if (state == PlayModeStateChange.EnteredPlayMode) {
             deadline = EditorApplication.timeSinceStartup + 90;
             requestedMain = false;
+            validatingCommonUI = false;
+            Application.runInBackground = true;
             Application.logMessageReceived += OnLog;
             EditorApplication.update += CheckFlow;
         } else if (state == PlayModeStateChange.EnteredEditMode) {
@@ -66,8 +69,10 @@ public static class FrameworkTemplateValidation {
         }
         var main = UnityEngine.Object.FindObjectOfType<MainPanel>();
         if (main != null && main.isOpened) {
-            SessionState.SetBool(Key + ".passed", true);
-            Finish();
+            if (!validatingCommonUI) {
+                validatingCommonUI = true;
+                ValidateCommonUI();
+            }
             return;
         }
         if (requestedMain) {
@@ -83,6 +88,17 @@ public static class FrameworkTemplateValidation {
             requestedMain = true;
             options.SelectAndConfirm(OptionEnum.NEWGAME);
         }
+    }
+
+    /**真实启动完成后再检查新公共能力，失败沿用同一批处理结果出口。*/
+    private static async void ValidateCommonUI() {
+        try {
+            await GlobalToastBaselineValidation.RunAsync();
+            SessionState.SetBool(Key + ".passed", true);
+        } catch (Exception error) {
+            SessionState.SetString(Key + ".error", error.ToString());
+        }
+        Finish();
     }
 
     /**停止监听并离开 Play，结果在 Domain Reload 后落盘*/

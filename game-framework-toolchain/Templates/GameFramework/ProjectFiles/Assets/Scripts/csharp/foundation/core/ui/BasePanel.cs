@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 
 /// <summary>
 /// 窗口状态枚举
@@ -20,6 +20,23 @@ public class BasePanel : BaseView {
     /// <remarks>参考UIEnum</remarks>
     public string panelEnum;
 
+    /**批量切换页面时保留的被动宿主。*/
+    public virtual bool KeepOpenOnCloseAll => false;
+
+    /**被动宿主退出键盘焦点竞争，普通窗口保留既有行为。*/
+    public virtual bool ReceivesPanelInput => true;
+
+    /**既有模板窗口布局保持；新组件可显式选择公共安全区。*/
+    public virtual bool FitContentToSafeArea => false;
+
+    public virtual string[] FullBleedChildren => System.Array.Empty<string>();
+
+    public virtual Vector2 SafeContentDesignSize => PanelMgr.ins.DesignSize;
+
+    private PanelSafeContent safeContent;
+
+    public RectTransform SafeContentRoot => safeContent != null ? safeContent.content : trans;
+
     /**窗口层级，参考PanelLayer*/
     public int layer;
     /**打开音效id*/
@@ -39,6 +56,12 @@ public class BasePanel : BaseView {
         state = PanelState.STATE_OPENING;
         if (openAudioId != 0) {
             AudioManager.ins.PlaySoundById(AudioBusType.HINT, openAudioId);
+        }
+        if (FitContentToSafeArea) {
+            if (safeContent == null) {
+                safeContent = gameObject.AddComponent<PanelSafeContent>();
+            }
+            safeContent.Initialize(FullBleedChildren, SafeContentDesignSize);
         }
         PlayOpen();
     }

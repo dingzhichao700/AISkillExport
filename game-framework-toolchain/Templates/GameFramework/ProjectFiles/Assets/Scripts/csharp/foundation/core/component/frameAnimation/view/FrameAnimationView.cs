@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.UI;
@@ -87,7 +87,7 @@ public class FrameAnimationView : MonoBehaviour {
         image.color = Color.white;
         image.raycastTarget = false;
         image.gameObject.SetActive(false);
-        image.material = ResourceManager.GetMaterial(ResourceConst.PATH_MATERIAL + "custom/matInstanceImage");
+        image.material = ResourcePresentation.Policy.GetFrameMaterial();
         dispacher = new EventDispatcher();
     }
 

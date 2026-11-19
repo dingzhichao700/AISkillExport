@@ -5,6 +5,9 @@ using System.Collections.Generic;
 /// </summary>
 public static class ResourceConst
 {
+    /**通用资源策略契约修订，用于加载边界验证。*/
+    public const string PresentationRevision = "resource-policy-baseline-1";
+
     public const string PATH_CONFIG = "Assets/ConfigBin/";
 
     const string ART_PATH = "Assets/Art/";

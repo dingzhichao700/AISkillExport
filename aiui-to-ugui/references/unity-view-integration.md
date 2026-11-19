@@ -47,8 +47,11 @@ persist gameplay data. Request those capabilities from `game-feature-logic`.
 
 ## Validation
 
-Verify compilation, Prefab references, event cleanup, reopen behavior, input,
-display refresh, and calls into business APIs. Report missing or provisional
+Apply the image loading, asynchronous reuse and shared-release checks in [resource production and consumption](resource-production-and-consumption.md) for consumers changed by this task; use the existing project loader.
+
+Include compilation, Prefab references, event cleanup, reopen behavior, input,
+display refresh and business API calls affected by this change in the consolidated
+check defined in `pipeline.md`; reuse still-valid checks from this same candidate. Report missing or provisional
 business interfaces instead of embedding temporary business rules in the View.
 
 Also validate that editor-only ScrollList preview objects cannot be mistaken for
@@ -64,3 +67,12 @@ missing-glyph boxes.
 ## Viewport and safe-area integration
 
 For responsive layouts or platform overlays, follow [viewport-safe-area.md](viewport-safe-area.md) and the project’s shared adaptation service. Preserve the distinction between project design dimensions and the actual viewport.
+
+## Existing screens and cross-screen acceptance
+
+For an existing screen revision, follow [existing-screen-revision.md](existing-screen-revision.md).
+Inspect scripts and runtime initialization that can override approved geometry,
+text, colors or visibility. Verify the normal game entry after layout settles,
+including reopen and pool reuse. Record child-screen opening context, navigation
+list/order, return restoration and refresh ownership; an independently working
+popup is not proof that the complete navigation path works.

@@ -1,0 +1,4 @@
+interface:
+  display_name: "游戏 UI 参考图拆件"
+  short_description: "从结构图、效果图与设计说明中拆解游戏界面素材并核对组件装配"
+  default_prompt: "使用 $game-ui-reference-extraction 从游戏 UI 参考图拆件并交付组件装配清单。"
