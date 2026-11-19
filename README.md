@@ -5,6 +5,7 @@ This repository stores reusable Codex skills for Unity uGUI and the Game Framewo
 Current skills:
 
 - `game-project-coordination`
+- `game-project-planning`
 - `aiui-to-ugui`
 - `game-ui-reference-extraction`
 - `game-art-asset-pipeline`
@@ -12,6 +13,8 @@ Current skills:
 - `game-framework-toolchain`
 - `game-build-release`
 - `character-animation-pipeline`
+- `unit-3d-frame-animation`
+- `unity-2d-skin-animation`
 - `frame-animation-packer`
 
 Each skill folder contains:

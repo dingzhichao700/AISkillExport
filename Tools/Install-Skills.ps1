@@ -20,6 +20,8 @@ $skillNames = @(
     "game-framework-toolchain",
     "game-build-release",
     "character-animation-pipeline",
+    "unit-3d-frame-animation",
+    "unity-2d-skin-animation",
     "frame-animation-packer"
 )
 

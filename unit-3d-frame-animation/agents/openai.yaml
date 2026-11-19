@@ -1,0 +1,4 @@
+interface:
+  display_name: "3D单位转帧动画"
+  short_description: "从可编辑3D模型与骨骼动作制作固定机位透明单位帧动画并分阶段审核"
+  default_prompt: "使用 $unit-3d-frame-animation 整理模型、定标机位并导出单位帧动画。"

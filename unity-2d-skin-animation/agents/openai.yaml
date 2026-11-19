@@ -1,0 +1,6 @@
+interface:
+  display_name: "角色立绘蒙皮动画"
+  short_description: "从已确认立绘和锚点制作Unity原生蒙皮动作与可选挂点帧特效"
+  default_prompt: "使用 $unity-2d-skin-animation 核查当前立绘和锚点，复用既有接入，完成本次授权动画阶段并留验收证据。"
+policy:
+  allow_implicit_invocation: true

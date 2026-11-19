@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "character": null,
+  "source": {
+    "path": null,
+    "appearanceConfirmed": false,
+    "approvalEvidence": null,
+    "canvasPx": null,
+    "sha256": null
+  },
+  "anchor": {
+    "confirmed": false,
+    "approvalEvidence": null,
+    "coordinateSpace": "continuous-bottom-left",
+    "pixels": null,
+    "normalized": null
+  },
+  "changeScope": "new-character",
+  "motionRequirements": [],
+  "existingRig": null,
+  "actions": [],
+  "prefabChecks": [],
+  "rigSnapshot": null,
+  "evidence": []
+}
